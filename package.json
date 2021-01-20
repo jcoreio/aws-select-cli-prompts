@@ -129,5 +129,8 @@
     "@babel/runtime": "^7.1.5",
     "async-autocomplete-cli": "^1.0.0",
     "fs-extra": "^9.1.0"
+  },
+  "peerDependencies": {
+    "aws-sdk": "^2.400.0"
   }
 }
