@@ -1,31 +1,42 @@
-# typescript-library-skeleton
+# @jcoreio/aws-select-cli-prompts
 
-[![CircleCI](https://circleci.com/gh/jedwards1211/typescript-library-skeleton.svg?style=svg)](https://circleci.com/gh/jedwards1211/typescript-library-skeleton)
-[![Coverage Status](https://codecov.io/gh/jedwards1211/typescript-library-skeleton/branch/master/graph/badge.svg)](https://codecov.io/gh/jedwards1211/typescript-library-skeleton)
+[![CircleCI](https://circleci.com/gh/jcoreio/aws-select-cli-prompts.svg?style=svg)](https://circleci.com/gh/jcoreio/aws-select-cli-prompts)
+[![Coverage Status](https://codecov.io/gh/jcoreio/aws-select-cli-prompts/branch/master/graph/badge.svg)](https://codecov.io/gh/jcoreio/aws-select-cli-prompts)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
-[![npm version](https://badge.fury.io/js/typescript-library-skeleton.svg)](https://badge.fury.io/js/typescript-library-skeleton)
+[![npm version](https://badge.fury.io/js/%40jcoreio%2Faws-select-cli-prompts.svg)](https://badge.fury.io/js/%40jcoreio%2Faws-select-cli-prompts)
 
-This is my personal skeleton for creating an typescript library npm package. You are welcome to use it.
+CLI prompts to select AWS resources via aws-sdk
 
-## Quick start
+# Installation
 
-```sh
-npx 0-60 clone https://github.com/jedwards1211/typescript-library-skeleton.git
+```js
+npm i --save @jcoreio/aws-select-cli-prompts
 ```
 
-## Tools used
+# API
 
-- babel 7
-- typescript
-- mocha
-- chai
-- istanbul
-- nyc
-- eslint
-- prettier
-- husky
-- semantic-release
-- renovate
-- Circle CI
-- Codecov.io
+## selectEC2Instance
+
+```js
+import { selectEC2Instance } from '@jcoreio/aws-select-cli-prompts'
+```
+
+Prompts the user to select an EC2 Instance. Returns a promise that resolves to the selected
+`AWS.EC2.Instance`.
+
+### Options
+
+#### `ec2?: AWS.EC2 = new AWS.EC2()`
+
+The EC2 API instance to use.
+
+#### `MaxResults?: number = 100`
+
+The maximum number of EC2 instances to fetch.
+
+#### `useRecents?: boolean = true`
+
+If `true`, load recent instances the user has selected in the past (from `~/.aws-select-cli-prompts/recents.json`)
+and present them when the filter text is empty. After the user makes a selection it will be saved tot he recents
+file.

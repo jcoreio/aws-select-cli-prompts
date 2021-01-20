@@ -1,7 +1,7 @@
 {
-  "name": "typescript-library-skeleton",
+  "name": "@jcoreio/aws-select-cli-prompts",
   "version": "0.0.0-development",
-  "description": "my personal ES2015 library project skeleton",
+  "description": "CLI prompts to select AWS resources via aws-sdk",
   "main": "index.js",
   "sideEffects": false,
   "scripts": {
@@ -22,6 +22,9 @@
     "prepublishOnly": "npm run clean && npm run prettier:check && npm run lint && npm test && npm run build",
     "open:coverage": "open coverage/lcov-report/index.html",
     "semantic-release": "semantic-release"
+  },
+  "bin": {
+    "select-ec2-instance": "./lib/selectEC2Instance.js"
   },
   "config": {
     "lint": "--cache --ext .js,.ts src test",
@@ -67,17 +70,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jedwards1211/typescript-library-skeleton.git"
+    "url": "https://github.com/jcoreio/aws-select-cli-prompts.git"
   },
   "keywords": [
-    "typescript"
+    "aws",
+    "cli",
+    "aws-sdk"
   ],
   "author": "Andy Edwards",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jedwards1211/typescript-library-skeleton/issues"
+    "url": "https://github.com/jcoreio/aws-select-cli-prompts/issues"
   },
-  "homepage": "https://github.com/jedwards1211/typescript-library-skeleton#readme",
+  "homepage": "https://github.com/jcoreio/aws-select-cli-prompts#readme",
   "devDependencies": {
     "@babel/cli": "^7.1.5",
     "@babel/core": "^7.1.6",
@@ -97,8 +102,10 @@
     "@jedwards1211/commitlint-config": "^1.0.1",
     "@jedwards1211/eslint-config-typescript": "^1.0.0",
     "@types/chai": "^4.2.0",
+    "@types/fs-extra": "^9.0.6",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.6",
+    "aws-sdk": "^2.829.0",
     "babel-eslint": "^10.0.1",
     "babel-plugin-istanbul": "^5.1.0",
     "chai": "^4.2.0",
@@ -116,9 +123,11 @@
     "prettier-eslint": "^8.8.2",
     "rimraf": "^2.6.0",
     "semantic-release": "^17.1.2",
-    "typescript": "^3.7.2"
+    "typescript": "^4.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.1.5"
+    "@babel/runtime": "^7.1.5",
+    "async-autocomplete-cli": "^1.0.0",
+    "fs-extra": "^9.1.0"
   }
 }
