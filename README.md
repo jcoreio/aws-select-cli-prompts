@@ -31,6 +31,10 @@ Prompts the user to select an EC2 Instance. Returns a promise that resolves to t
 
 The EC2 API instance to use.
 
+#### `Filters?: AWS.EC2.DescribeInstancesRequest['Filters'] = []`
+
+Additional filters to use.
+
 #### `MaxResults?: number = 100`
 
 The maximum number of EC2 instances to fetch.

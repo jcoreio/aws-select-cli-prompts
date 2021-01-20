@@ -26,12 +26,14 @@ function createChoice(Instance: AWS.EC2.Instance): Choice<AWS.EC2.Instance> {
 export default async function selectEC2Instance({
   ec2 = new AWS.EC2(),
   message = `Select an EC2 Instance (region: ${ec2.config.region})`,
+  Filters: _Filters = [],
   MaxResults = 100,
   useRecents = true,
   ...autocompleteOpts
 }: {
   ec2?: AWS.EC2
   message?: string
+  Filters?: AWS.EC2.DescribeInstancesRequest['Filters']
   MaxResults?: number
   useRecents?: boolean
   limit?: number
@@ -62,7 +64,7 @@ export default async function selectEC2Instance({
         yieldChoices(choices)
       }
 
-      const Filters: AWS.EC2.DescribeInstancesRequest['Filters'] = []
+      const Filters: AWS.EC2.DescribeInstancesRequest['Filters'] = [..._Filters]
       if (input)
         Filters.push({
           Name: 'tag:Name',
