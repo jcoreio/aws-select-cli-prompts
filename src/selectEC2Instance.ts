@@ -66,10 +66,12 @@ export type InstanceForChoice = Pick<
   'InstanceId' | 'Tags' | 'State' | 'LaunchTime'
 >
 
+type ChoiceProps = { Instance?: AWS.EC2.Instance; InstanceId?: string }
+
 function createChoice(
   Instance: InstanceForChoice,
   options?: { recent?: boolean }
-): Choice<AWS.EC2.Instance> {
+): Choice<ChoiceProps> {
   const { InstanceId, Tags = [], State, LaunchTime } = Instance
   const name = (Tags.find(t => t.Key === 'Name') || {}).Value
   return {
@@ -77,7 +79,7 @@ function createChoice(
       options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
       stateLength
     )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`,
-    value: Instance,
+    value: { Instance, InstanceId },
   }
 }
 
@@ -100,15 +102,15 @@ export default async function selectEC2Instance({
   stdin?: Readable
   stdout?: Writable
 } = {}): Promise<AWS.EC2.Instance> {
-  let selected = await asyncAutocomplete({
+  const selected = await asyncAutocomplete({
     ...autocompleteOpts,
     message,
     suggest: async (
       input: string,
       cancelationToken: CancelationToken,
-      yieldChoices: (choices: Choices<AWS.EC2.Instance>) => void
-    ): Promise<Choices<AWS.EC2.Instance> | void> => {
-      const choices: Choices<AWS.EC2.Instance> = []
+      yieldChoices: (choices: Choices<ChoiceProps>) => void
+    ): Promise<Choices<ChoiceProps> | void> => {
+      const choices: Choices<ChoiceProps> = []
 
       if (!input && useRecents) {
         choices.push(
@@ -155,21 +157,23 @@ export default async function selectEC2Instance({
   })
   if (!selected) throw new Error('no EC2 instance was selected')
 
-  if (typeof selected === 'string') {
+  let { Instance } = selected
+  const { InstanceId } = selected
+
+  if (!Instance && InstanceId) {
     const described = await ec2
       .describeInstances({
-        InstanceIds: [selected],
+        InstanceIds: [InstanceId],
       })
       .promise()
-    const Instance = described.Reservations?.[0]?.Instances?.[0]
-    if (!Instance) throw new Error(`failed to describe instance: ${selected}`)
-    selected = Instance
+    Instance = described.Reservations?.[0]?.Instances?.[0]
   }
+  if (!Instance) throw new Error(`failed to describe instance: ${InstanceId}`)
 
   if (useRecents) {
-    await addRecent(ec2.config, 'selectEC2Instance', selected)
+    await addRecent(ec2.config, 'selectEC2Instance', Instance)
   }
-  return selected
+  return Instance
 }
 
 if (require.main === module) {
