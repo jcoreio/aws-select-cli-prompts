@@ -79,7 +79,7 @@ function createChoice(
       options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
       stateLength
     )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`,
-    value: { Instance, InstanceId },
+    value: { Instance: options?.recent ? undefined : Instance, InstanceId },
   }
 }
 
