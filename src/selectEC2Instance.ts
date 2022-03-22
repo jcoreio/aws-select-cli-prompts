@@ -7,6 +7,7 @@ import {
   Choices,
   Style,
 } from 'async-autocomplete-cli'
+import chalk from 'chalk'
 
 import { Readable, Writable } from 'stream'
 
@@ -14,11 +15,68 @@ import AWS from 'aws-sdk'
 
 import { loadRecents, addRecent } from './recents'
 
-function createChoice(Instance: AWS.EC2.Instance): Choice<AWS.EC2.Instance> {
-  const { InstanceId, Tags = [] } = Instance
+function column(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any,
+  length: number
+): string {
+  value = String(value ?? '').padEnd(length)
+  return value.length > length ? `${value.substring(0, length - 3)}...` : value
+}
+
+function datePart(part: number, length = 2): string {
+  return String(part).padStart(length, '0')
+}
+
+function formatDate(date: Date | null | undefined): string {
+  if (!date) return ''
+  const y = date.getFullYear()
+  const M = date.getMonth() + 1
+  const d = date.getDate()
+  const h = date.getHours()
+  const m = date.getMinutes()
+  return `${datePart(y)}/${datePart(M)}/${datePart(d)} ${datePart(
+    h
+  )}:${datePart(m)}`
+}
+
+function formatState(State: AWS.EC2.InstanceState | null | undefined): string {
+  if (!State) return ''
+  switch (State.Name) {
+    case 'pending':
+      return chalk.gray('🔵 Pending')
+    case 'running':
+      return chalk.green('🟢 Running')
+    case 'shutting-down':
+      return chalk.gray('🟠 Shutting Down')
+    case 'terminated':
+      return chalk.gray('⚫️ Terminated')
+    case 'stopping':
+      return chalk.gray('🟠 Stopping')
+    case 'stopped':
+      return chalk.gray('🔴 Stopped')
+  }
+  return chalk.gray(State.Name)
+}
+
+const stateLength = formatState({ Code: 32, Name: 'shutting-down' }).length
+
+export type InstanceForChoice = Pick<
+  AWS.EC2.Instance,
+  'InstanceId' | 'Tags' | 'State' | 'LaunchTime'
+>
+
+function createChoice(
+  Instance: InstanceForChoice,
+  options?: { recent?: boolean }
+): Choice<AWS.EC2.Instance> {
+  const { InstanceId, Tags = [], State, LaunchTime } = Instance
   const name = (Tags.find(t => t.Key === 'Name') || {}).Value
   return {
-    title: `${InstanceId} ${name || ''}`,
+    title: `${column(name, 32)}  ${column(InstanceId, 19)}  ${column(
+      options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
+      stateLength
+    )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`,
     value: Instance,
   }
 }
@@ -56,10 +114,7 @@ export default async function selectEC2Instance({
         choices.push(
           ...(
             await loadRecents<AWS.EC2.Instance>(ec2.config, 'selectEC2Instance')
-          ).map(({ title, ...rest }) => ({
-            title: `${title} (recent)`,
-            ...rest,
-          }))
+          ).map(i => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
@@ -89,7 +144,7 @@ export default async function selectEC2Instance({
 
       if (!choices.length) {
         choices.push({
-          title: 'No matching EC2 Instances found',
+          title: chalk.gray('No matching EC2 Instances found'),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           value: undefined as any,
         })
@@ -112,10 +167,7 @@ export default async function selectEC2Instance({
   }
 
   if (useRecents) {
-    await addRecent(ec2.config, 'selectEC2Instance', {
-      title: createChoice(selected).title,
-      value: selected.InstanceId,
-    })
+    await addRecent(ec2.config, 'selectEC2Instance', selected)
   }
   return selected
 }
