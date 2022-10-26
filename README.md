@@ -44,3 +44,32 @@ The maximum number of EC2 instances to fetch.
 If `true`, load recent instances the user has selected in the past (from `~/.aws-select-cli-prompts/recents.json`)
 and present them when the filter text is empty. After the user makes a selection it will be saved tot he recents
 file.
+
+## selectEBSSnapshot
+
+```js
+import { selectEBSSnapshot } from '@jcoreio/aws-select-cli-prompts'
+```
+
+Prompts the user to select an EBS Snapshot. Returns a promise that resolves to the selected
+`AWS.EC2.Snapshot`.
+
+### Options
+
+#### `ec2?: AWS.EC2 = new AWS.EC2()`
+
+The EC2 API instance to use.
+
+#### `Filters?: AWS.EC2.DescribeSnapshotsRequest['Filters'] = []`
+
+Additional filters to use.
+
+#### `MaxResults?: number = 100`
+
+The maximum number of snapshots to fetch.
+
+#### `useRecents?: boolean = true`
+
+If `true`, load recent instances the user has selected in the past (from `~/.aws-select-cli-prompts/recents.json`)
+and present them when the filter text is empty. After the user makes a selection it will be saved tot he recents
+file.

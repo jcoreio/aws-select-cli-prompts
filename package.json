@@ -24,7 +24,8 @@
     "semantic-release": "semantic-release"
   },
   "bin": {
-    "select-ec2-instance": "./lib/selectEC2Instance.js"
+    "select-ec2-instance": "./lib/selectEC2Instance.js",
+    "select-ebs-snapshot": "./lib/selectEBSSnapshot.js"
   },
   "config": {
     "lint": "--cache --ext .js,.ts src test",

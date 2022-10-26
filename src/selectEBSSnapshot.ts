@@ -118,7 +118,9 @@ export default async function selectEBSSnapshot({
         yieldChoices(choices)
       }
 
-      const args: AWS.EC2.DescribeSnapshotsRequest = { MaxResults }
+      const args: AWS.EC2.DescribeSnapshotsRequest = {
+        MaxResults: Math.floor(MaxResults / 2),
+      }
       const request1 = ec2.describeSnapshots({
         ...args,
         Filters: [...Filters, { Name: 'tag:Name', Values: [`*${input}*`] }],
