@@ -73,7 +73,7 @@ function createChoice(
   options?: { recent?: boolean }
 ): Choice<ChoiceProps> {
   const { InstanceId, Tags = [], State, LaunchTime } = Instance
-  const name = (Tags.find(t => t.Key === 'Name') || {}).Value
+  const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
   return {
     title: `${column(name, 32)}  ${column(InstanceId, 19)}  ${column(
       options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
@@ -116,7 +116,7 @@ export default async function selectEC2Instance({
         choices.push(
           ...(
             await loadRecents<AWS.EC2.Instance>(ec2.config, 'selectEC2Instance')
-          ).map(i => createChoice(i, { recent: true }))
+          ).map((i) => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
@@ -175,7 +175,7 @@ export default async function selectEC2Instance({
       ec2.config,
       'selectEC2Instance',
       Instance,
-      i => i.InstanceId
+      (i) => i.InstanceId
     )
   }
   return Instance
@@ -183,12 +183,12 @@ export default async function selectEC2Instance({
 
 if (require.main === module) {
   selectEC2Instance().then(
-    instance => {
+    (instance) => {
       // eslint-disable-next-line no-console
       console.log(instance.InstanceId)
       process.exit(0)
     },
-    error => {
+    (error) => {
       // eslint-disable-next-line no-console
       console.error(error.stack)
       process.exit(1)

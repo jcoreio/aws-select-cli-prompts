@@ -67,7 +67,7 @@ function createChoice(
   options?: { recent?: boolean }
 ): Choice<ChoiceProps> {
   const { SnapshotId, Description, Tags = [], State, StartTime } = Snapshot
-  const name = (Tags.find(t => t.Key === 'Name') || {}).Value
+  const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
   return {
     title: `${column(name, 32)}  ${column(Description, 32)}  ${column(
       SnapshotId,
@@ -113,7 +113,7 @@ export default async function selectEBSSnapshot({
         choices.push(
           ...(
             await loadRecents<AWS.EC2.Snapshot>(ec2.config, 'selectEBSSnapshot')
-          ).map(i => createChoice(i, { recent: true }))
+          ).map((i) => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
@@ -136,10 +136,8 @@ export default async function selectEBSSnapshot({
 
       if (cancelationToken.canceled) return []
 
-      const [
-        { Snapshots: Snapshots1 },
-        { Snapshots: Snapshots2 },
-      ] = await Promise.all([request1.promise(), request2.promise()])
+      const [{ Snapshots: Snapshots1 }, { Snapshots: Snapshots2 }] =
+        await Promise.all([request1.promise(), request2.promise()])
       for (const Snapshot of [...(Snapshots1 || []), ...(Snapshots2 || [])]) {
         choices.push({
           ...createChoice(Snapshot),
@@ -178,7 +176,7 @@ export default async function selectEBSSnapshot({
       ec2.config,
       'selectEBSSnapshot',
       Snapshot,
-      s => s.SnapshotId
+      (s) => s.SnapshotId
     )
   }
   return Snapshot
@@ -186,12 +184,12 @@ export default async function selectEBSSnapshot({
 
 if (require.main === module) {
   selectEBSSnapshot().then(
-    snapshot => {
+    (snapshot) => {
       // eslint-disable-next-line no-console
       console.log(snapshot.SnapshotId)
       process.exit(0)
     },
-    error => {
+    (error) => {
       // eslint-disable-next-line no-console
       console.error(error.stack)
       process.exit(1)
