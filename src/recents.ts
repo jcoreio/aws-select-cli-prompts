@@ -22,19 +22,21 @@ function getAccessKeyId(config: AWS.Config): string {
 export async function loadRecents<T>(
   config: AWS.Config,
   category: string
-): Promise<InstanceForChoice[]> {
+): Promise<T[]> {
   try {
     const accessKeyId = getAccessKeyId(config)
     const recents = await fs.readJson(RECENTS_FILE)
     return (recents[accessKeyId]?.[category] || []).map(
-      (c: any): InstanceForChoice => {
-        if (c.title && c.value) {
-          const [InstanceId, Name] = c.title.split(/\s+/)
-          return { InstanceId, Tags: [{ Key: 'Name', Value: Name }] }
-        }
-        const { InstanceId, Tags, State, LaunchTime } = c
-        return { InstanceId, Tags, State, LaunchTime: new Date(LaunchTime) }
-      }
+      (c: any): T =>
+        Object.fromEntries(
+          [...Object.entries(c)].map(([key, value]) => [
+            key,
+            typeof value === 'string' &&
+            /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/.test(value)
+              ? new Date(value)
+              : value,
+          ])
+        ) as any
     )
   } catch (error) {
     if ((error as any).code !== 'EEXIST' && (error as any).code !== 'ENOENT') {
@@ -52,7 +54,8 @@ export async function loadRecents<T>(
 export async function addRecent<T>(
   config: AWS.Config,
   category: string,
-  newRecent: InstanceForChoice
+  newRecent: T,
+  getId: (recent: T) => any
 ): Promise<void> {
   try {
     const accessKeyId = getAccessKeyId(config)
@@ -60,13 +63,8 @@ export async function addRecent<T>(
     const original = await fs.readJson(RECENTS_FILE).catch(() => ({}))
     const list: InstanceForChoice[] = (
       original[accessKeyId]?.[category] || []
-    ).filter(
-      (c: any) =>
-        c.value !== newRecent.InstanceId &&
-        c.InstanceId !== newRecent.InstanceId
-    )
-    const { InstanceId, Tags, State, LaunchTime } = newRecent
-    list.unshift({ InstanceId, Tags, State, LaunchTime })
+    ).filter((c: any) => getId(c) !== getId(newRecent))
+    list.unshift(newRecent as any)
     if (list.length > 20) list.pop()
     await fs.writeJson(RECENTS_FILE, {
       ...original,

@@ -40,60 +40,57 @@ function formatDate(date: Date | null | undefined): string {
   )}:${datePart(m)}`
 }
 
-function formatState(State: AWS.EC2.InstanceState | null | undefined): string {
+function formatState(State: AWS.EC2.SnapshotState | null | undefined): string {
   if (!State) return ''
-  switch (State.Name) {
+  switch (State) {
     case 'pending':
       return chalk.gray('🔵 Pending')
-    case 'running':
-      return chalk.green('🟢 Running')
-    case 'shutting-down':
-      return chalk.gray('🟠 Shutting Down')
-    case 'terminated':
-      return chalk.gray('⚫️ Terminated')
-    case 'stopping':
-      return chalk.gray('🟠 Stopping')
-    case 'stopped':
-      return chalk.gray('🔴 Stopped')
+    case 'completed':
+      return chalk.green('🟢 Completed')
+    case 'error':
+      return chalk.gray('🔴 Error')
   }
-  return chalk.gray(State.Name)
+  return chalk.gray(State)
 }
 
-const stateLength = formatState({ Code: 32, Name: 'shutting-down' }).length
+const stateLength = formatState('completed').length
 
-export type InstanceForChoice = Pick<
-  AWS.EC2.Instance,
-  'InstanceId' | 'Tags' | 'State' | 'LaunchTime'
+export type SnapshotForChoice = Pick<
+  AWS.EC2.Snapshot,
+  'SnapshotId' | 'Description' | 'Tags' | 'StartTime' | 'State'
 >
 
-type ChoiceProps = { Instance?: AWS.EC2.Instance; InstanceId?: string }
+type ChoiceProps = { Snapshot?: AWS.EC2.Snapshot; SnapshotId?: string }
 
 function createChoice(
-  Instance: InstanceForChoice,
+  Snapshot: SnapshotForChoice,
   options?: { recent?: boolean }
 ): Choice<ChoiceProps> {
-  const { InstanceId, Tags = [], State, LaunchTime } = Instance
+  const { SnapshotId, Description, Tags = [], State, StartTime } = Snapshot
   const name = (Tags.find(t => t.Key === 'Name') || {}).Value
   return {
-    title: `${column(name, 32)}  ${column(InstanceId, 19)}  ${column(
+    title: `${column(name, 32)}  ${column(Description, 32)}  ${column(
+      SnapshotId,
+      22
+    )}  ${column(
       options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
       stateLength
-    )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`,
-    value: { Instance: options?.recent ? undefined : Instance, InstanceId },
+    )}  ${column(formatDate(StartTime), '2022/03/17 17:37'.length)}`,
+    value: { Snapshot: options?.recent ? undefined : Snapshot, SnapshotId },
   }
 }
 
-export default async function selectEC2Instance({
+export default async function selectEBSSnapshot({
   ec2 = new AWS.EC2(),
-  message = `Select an EC2 Instance (region: ${ec2.config.region})`,
-  Filters: _Filters = [],
+  message = `Select an EBS Snapshot (region: ${ec2.config.region})`,
+  Filters = [],
   MaxResults = 100,
   useRecents = true,
   ...autocompleteOpts
 }: {
   ec2?: AWS.EC2
   message?: string
-  Filters?: AWS.EC2.DescribeInstancesRequest['Filters']
+  Filters?: AWS.EC2.DescribeSnapshotsRequest['Filters']
   MaxResults?: number
   useRecents?: boolean
   limit?: number
@@ -101,7 +98,7 @@ export default async function selectEC2Instance({
   clearFirst?: boolean
   stdin?: Readable
   stdout?: Writable
-} = {}): Promise<AWS.EC2.Instance> {
+} = {}): Promise<AWS.EC2.Snapshot> {
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
     message,
@@ -115,38 +112,42 @@ export default async function selectEC2Instance({
       if (!input && useRecents) {
         choices.push(
           ...(
-            await loadRecents<AWS.EC2.Instance>(ec2.config, 'selectEC2Instance')
+            await loadRecents<AWS.EC2.Snapshot>(ec2.config, 'selectEBSSnapshot')
           ).map(i => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
 
-      const Filters: AWS.EC2.DescribeInstancesRequest['Filters'] = [..._Filters]
-      if (input)
-        Filters.push({
-          Name: 'tag:Name',
-          Values: [`*${input}*`],
-        })
-      const args: AWS.EC2.DescribeInstancesRequest = { MaxResults }
-      if (Filters.length) args.Filters = Filters
-      const request = ec2.describeInstances(args)
-      cancelationToken.once('canceled', () => request.abort())
+      const args: AWS.EC2.DescribeSnapshotsRequest = { MaxResults }
+      const request1 = ec2.describeSnapshots({
+        ...args,
+        Filters: [...Filters, { Name: 'tag:Name', Values: [`*${input}*`] }],
+      })
+      const request2 = ec2.describeSnapshots({
+        ...args,
+        Filters: [...Filters, { Name: 'description', Values: [`*${input}*`] }],
+      })
+      cancelationToken.once('canceled', () => {
+        request1.abort()
+        request2.abort()
+      })
 
       if (cancelationToken.canceled) return []
 
-      const { Reservations } = await request.promise()
-      for (const { Instances } of Reservations || []) {
-        for (const Instance of Instances || []) {
-          choices.push({
-            ...createChoice(Instance),
-            initial: !choices.length,
-          })
-        }
+      const [
+        { Snapshots: Snapshots1 },
+        { Snapshots: Snapshots2 },
+      ] = await Promise.all([request1.promise(), request2.promise()])
+      for (const Snapshot of [...(Snapshots1 || []), ...(Snapshots2 || [])]) {
+        choices.push({
+          ...createChoice(Snapshot),
+          initial: !choices.length,
+        })
       }
 
       if (!choices.length) {
         choices.push({
-          title: chalk.gray('No matching EC2 Instances found'),
+          title: chalk.gray('No matching EBS Snapshots found'),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           value: undefined as any,
         })
@@ -155,37 +156,37 @@ export default async function selectEC2Instance({
       return choices
     },
   })
-  if (!selected) throw new Error('no EC2 instance was selected')
+  if (!selected) throw new Error('no EBS snapshot was selected')
 
-  let { Instance } = selected
-  const { InstanceId } = selected
+  let { Snapshot } = selected
+  const { SnapshotId } = selected
 
-  if (!Instance && InstanceId) {
+  if (!Snapshot && SnapshotId) {
     const described = await ec2
-      .describeInstances({
-        InstanceIds: [InstanceId],
+      .describeSnapshots({
+        SnapshotIds: [SnapshotId],
       })
       .promise()
-    Instance = described.Reservations?.[0]?.Instances?.[0]
+    Snapshot = described.Snapshots?.[0]
   }
-  if (!Instance) throw new Error(`failed to describe instance: ${InstanceId}`)
+  if (!Snapshot) throw new Error(`failed to describe snapshot: ${SnapshotId}`)
 
   if (useRecents) {
     await addRecent(
       ec2.config,
-      'selectEC2Instance',
-      Instance,
-      i => i.InstanceId
+      'selectEBSSnapshot',
+      Snapshot,
+      s => s.SnapshotId
     )
   }
-  return Instance
+  return Snapshot
 }
 
 if (require.main === module) {
-  selectEC2Instance().then(
-    instance => {
+  selectEBSSnapshot().then(
+    snapshot => {
       // eslint-disable-next-line no-console
-      console.log(instance.InstanceId)
+      console.log(snapshot.SnapshotId)
       process.exit(0)
     },
     error => {
