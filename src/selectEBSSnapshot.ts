@@ -11,7 +11,13 @@ import chalk from 'chalk'
 
 import { Readable, Writable } from 'stream'
 
-import AWS from 'aws-sdk'
+import {
+  DescribeSnapshotsCommand,
+  DescribeSnapshotsRequest,
+  EC2,
+  Snapshot,
+  SnapshotState,
+} from '@aws-sdk/client-ec2'
 
 import { loadRecents, addRecent } from './recents'
 
@@ -40,7 +46,7 @@ function formatDate(date: Date | null | undefined): string {
   )}:${datePart(m)}`
 }
 
-function formatState(State: AWS.EC2.SnapshotState | null | undefined): string {
+function formatState(State: SnapshotState | null | undefined): string {
   if (!State) return ''
   switch (State) {
     case 'pending':
@@ -56,11 +62,11 @@ function formatState(State: AWS.EC2.SnapshotState | null | undefined): string {
 const stateLength = formatState('completed').length
 
 export type SnapshotForChoice = Pick<
-  AWS.EC2.Snapshot,
+  Snapshot,
   'SnapshotId' | 'Description' | 'Tags' | 'StartTime' | 'State'
 >
 
-type ChoiceProps = { Snapshot?: AWS.EC2.Snapshot; SnapshotId?: string }
+type ChoiceProps = { Snapshot?: Snapshot; SnapshotId?: string }
 
 function createChoice(
   Snapshot: SnapshotForChoice,
@@ -81,16 +87,16 @@ function createChoice(
 }
 
 export default async function selectEBSSnapshot({
-  ec2 = new AWS.EC2(),
-  message = `Select an EBS Snapshot (region: ${ec2.config.region})`,
+  ec2 = new EC2(),
+  message,
   Filters = [],
   MaxResults = 100,
   useRecents = true,
   ...autocompleteOpts
 }: {
-  ec2?: AWS.EC2
+  ec2?: EC2
   message?: string
-  Filters?: AWS.EC2.DescribeSnapshotsRequest['Filters']
+  Filters?: DescribeSnapshotsRequest['Filters']
   MaxResults?: number
   useRecents?: boolean
   limit?: number
@@ -98,7 +104,13 @@ export default async function selectEBSSnapshot({
   clearFirst?: boolean
   stdin?: Readable
   stdout?: Writable
-} = {}): Promise<AWS.EC2.Snapshot> {
+} = {}): Promise<Snapshot> {
+  const region = await ec2.config.region()
+  if (!message) message = `Select an EBS Snapshot (region: ${region})`
+
+  const profile =
+    process.env.AWS_PROFILE || (await ec2.config.credentials()).accessKeyId
+
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
     message,
@@ -112,32 +124,44 @@ export default async function selectEBSSnapshot({
       if (!input && useRecents) {
         choices.push(
           ...(
-            await loadRecents<AWS.EC2.Snapshot>(ec2.config, 'selectEBSSnapshot')
+            await loadRecents<Snapshot>(['selectEBSSnapshot', profile, region])
           ).map((i) => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
 
-      const args: AWS.EC2.DescribeSnapshotsRequest = {
+      const args: DescribeSnapshotsRequest = {
         MaxResults: Math.floor(MaxResults / 2),
       }
-      const request1 = ec2.describeSnapshots({
-        ...args,
-        Filters: [...Filters, { Name: 'tag:Name', Values: [`*${input}*`] }],
-      })
-      const request2 = ec2.describeSnapshots({
-        ...args,
-        Filters: [...Filters, { Name: 'description', Values: [`*${input}*`] }],
-      })
-      cancelationToken.once('canceled', () => {
-        request1.abort()
-        request2.abort()
-      })
 
       if (cancelationToken.canceled) return []
+      const ac = new AbortController()
+      cancelationToken.once('canceled', () => ac.abort())
 
       const [{ Snapshots: Snapshots1 }, { Snapshots: Snapshots2 }] =
-        await Promise.all([request1.promise(), request2.promise()])
+        await Promise.all([
+          ec2.send(
+            new DescribeSnapshotsCommand({
+              ...args,
+              Filters: [
+                ...Filters,
+                { Name: 'tag:Name', Values: [`*${input}*`] },
+              ],
+            }),
+            { abortSignal: ac.signal }
+          ),
+          ec2.send(
+            new DescribeSnapshotsCommand({
+              ...args,
+              Filters: [
+                ...Filters,
+                { Name: 'description', Values: [`*${input}*`] },
+              ],
+            }),
+            { abortSignal: ac.signal }
+          ),
+        ])
+
       for (const Snapshot of [...(Snapshots1 || []), ...(Snapshots2 || [])]) {
         choices.push({
           ...createChoice(Snapshot),
@@ -162,19 +186,18 @@ export default async function selectEBSSnapshot({
   const { SnapshotId } = selected
 
   if (!Snapshot && SnapshotId) {
-    const described = await ec2
-      .describeSnapshots({
+    const described = await ec2.send(
+      new DescribeSnapshotsCommand({
         SnapshotIds: [SnapshotId],
       })
-      .promise()
+    )
     Snapshot = described.Snapshots?.[0]
   }
   if (!Snapshot) throw new Error(`failed to describe snapshot: ${SnapshotId}`)
 
   if (useRecents) {
     await addRecent(
-      ec2.config,
-      'selectEBSSnapshot',
+      ['selectEBSSnapshot', profile, region],
       Snapshot,
       (s) => s.SnapshotId
     )
@@ -183,16 +206,14 @@ export default async function selectEBSSnapshot({
 }
 
 if (require.main === module) {
-  selectEBSSnapshot().then(
-    (snapshot) => {
-      // eslint-disable-next-line no-console
-      console.log(snapshot.SnapshotId)
-      process.exit(0)
-    },
-    (error) => {
-      // eslint-disable-next-line no-console
-      console.error(error.stack)
-      process.exit(1)
-    }
-  )
+  ;(async () => {
+    const { cli } = await import('./cli')
+    await cli({
+      select: () => selectEBSSnapshot(),
+      queries: {
+        id: 'SnapshotId',
+        vol: 'VolumneId',
+      },
+    })
+  })()
 }

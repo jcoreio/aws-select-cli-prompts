@@ -1,4 +1,3 @@
-import AWS from 'aws-sdk'
 import os from 'os'
 import path from 'path'
 import fs from 'fs-extra'
@@ -11,22 +10,10 @@ const RECENTS_FILE = path.join(
   'recents.json'
 )
 
-function getAccessKeyId(config: AWS.Config): string {
-  const result = config.credentials?.accessKeyId
-  if (!result) {
-    throw new Error(`failed to get accessKeyId from AWS config`)
-  }
-  return result
-}
-
-export async function loadRecents<T>(
-  config: AWS.Config,
-  category: string
-): Promise<T[]> {
+export async function loadRecents<T>(category: string[]): Promise<T[]> {
   try {
-    const accessKeyId = getAccessKeyId(config)
     const recents = await fs.readJson(RECENTS_FILE)
-    return (recents[accessKeyId]?.[category] || []).map(
+    return (recents?.[JSON.stringify(category)] || []).map(
       (c: any): T =>
         Object.fromEntries(
           [...Object.entries(c)].map(([key, value]) => [
@@ -52,27 +39,20 @@ export async function loadRecents<T>(
 }
 
 export async function addRecent<T>(
-  config: AWS.Config,
-  category: string,
+  category: string[],
   newRecent: T,
   getId: (recent: T) => any
 ): Promise<void> {
   try {
-    const accessKeyId = getAccessKeyId(config)
+    const key = JSON.stringify(category)
     await fs.mkdirs(path.dirname(RECENTS_FILE))
     const original = await fs.readJson(RECENTS_FILE).catch(() => ({}))
-    const list: InstanceForChoice[] = (
-      original[accessKeyId]?.[category] || []
-    ).filter((c: any) => getId(c) !== getId(newRecent))
+    const list: InstanceForChoice[] = (original?.[key] || []).filter(
+      (c: any) => getId(c) !== getId(newRecent)
+    )
     list.unshift(newRecent as any)
     if (list.length > 20) list.pop()
-    await fs.writeJson(RECENTS_FILE, {
-      ...original,
-      [accessKeyId]: {
-        ...original[accessKeyId],
-        [category]: list,
-      },
-    })
+    await fs.writeJson(RECENTS_FILE, { ...original, [key]: list })
     await fs.chmod(RECENTS_FILE, 0o600)
   } catch (error) {
     // eslint-disable-next-line no-console

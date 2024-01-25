@@ -8,11 +8,14 @@ import {
   Style,
 } from 'async-autocomplete-cli'
 import chalk from 'chalk'
-
+import {
+  DescribeInstancesCommand,
+  DescribeInstancesRequest,
+  EC2,
+  Instance,
+  InstanceState,
+} from '@aws-sdk/client-ec2'
 import { Readable, Writable } from 'stream'
-
-import AWS from 'aws-sdk'
-
 import { loadRecents, addRecent } from './recents'
 
 function column(
@@ -40,7 +43,7 @@ function formatDate(date: Date | null | undefined): string {
   )}:${datePart(m)}`
 }
 
-function formatState(State: AWS.EC2.InstanceState | null | undefined): string {
+function formatState(State: InstanceState | null | undefined): string {
   if (!State) return ''
   switch (State.Name) {
     case 'pending':
@@ -62,11 +65,11 @@ function formatState(State: AWS.EC2.InstanceState | null | undefined): string {
 const stateLength = formatState({ Code: 32, Name: 'shutting-down' }).length
 
 export type InstanceForChoice = Pick<
-  AWS.EC2.Instance,
+  Instance,
   'InstanceId' | 'Tags' | 'State' | 'LaunchTime'
 >
 
-type ChoiceProps = { Instance?: AWS.EC2.Instance; InstanceId?: string }
+type ChoiceProps = { Instance?: Instance; InstanceId?: string }
 
 function createChoice(
   Instance: InstanceForChoice,
@@ -84,16 +87,16 @@ function createChoice(
 }
 
 export default async function selectEC2Instance({
-  ec2 = new AWS.EC2(),
-  message = `Select an EC2 Instance (region: ${ec2.config.region})`,
+  ec2 = new EC2(),
+  message,
   Filters: _Filters = [],
   MaxResults = 100,
   useRecents = true,
   ...autocompleteOpts
 }: {
-  ec2?: AWS.EC2
+  ec2?: EC2
   message?: string
-  Filters?: AWS.EC2.DescribeInstancesRequest['Filters']
+  Filters?: DescribeInstancesRequest['Filters']
   MaxResults?: number
   useRecents?: boolean
   limit?: number
@@ -101,7 +104,13 @@ export default async function selectEC2Instance({
   clearFirst?: boolean
   stdin?: Readable
   stdout?: Writable
-} = {}): Promise<AWS.EC2.Instance> {
+} = {}): Promise<Instance> {
+  const region = await ec2.config.region()
+  if (!message) message = `Select an EC2 Instance (region: ${region})`
+
+  const profile =
+    process.env.AWS_PROFILE || (await ec2.config.credentials()).accessKeyId
+
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
     message,
@@ -115,26 +124,30 @@ export default async function selectEC2Instance({
       if (!input && useRecents) {
         choices.push(
           ...(
-            await loadRecents<AWS.EC2.Instance>(ec2.config, 'selectEC2Instance')
+            await loadRecents<Instance>(['selectEC2Instance', profile, region])
           ).map((i) => createChoice(i, { recent: true }))
         )
         yieldChoices(choices)
       }
 
-      const Filters: AWS.EC2.DescribeInstancesRequest['Filters'] = [..._Filters]
+      const Filters: DescribeInstancesRequest['Filters'] = [..._Filters]
       if (input)
         Filters.push({
           Name: 'tag:Name',
           Values: [`*${input}*`],
         })
-      const args: AWS.EC2.DescribeInstancesRequest = { MaxResults }
+      const args: DescribeInstancesRequest = { MaxResults }
       if (Filters.length) args.Filters = Filters
-      const request = ec2.describeInstances(args)
-      cancelationToken.once('canceled', () => request.abort())
-
       if (cancelationToken.canceled) return []
+      const ac = new AbortController()
+      cancelationToken.once('canceled', () => ac.abort())
+      const { Reservations } = await ec2.send(
+        new DescribeInstancesCommand(args),
+        {
+          abortSignal: ac.signal,
+        }
+      )
 
-      const { Reservations } = await request.promise()
       for (const { Instances } of Reservations || []) {
         for (const Instance of Instances || []) {
           choices.push({
@@ -161,19 +174,18 @@ export default async function selectEC2Instance({
   const { InstanceId } = selected
 
   if (!Instance && InstanceId) {
-    const described = await ec2
-      .describeInstances({
+    const described = await ec2.send(
+      new DescribeInstancesCommand({
         InstanceIds: [InstanceId],
       })
-      .promise()
+    )
     Instance = described.Reservations?.[0]?.Instances?.[0]
   }
   if (!Instance) throw new Error(`failed to describe instance: ${InstanceId}`)
 
   if (useRecents) {
     await addRecent(
-      ec2.config,
-      'selectEC2Instance',
+      ['selectEC2Instance', profile, region],
       Instance,
       (i) => i.InstanceId
     )
@@ -182,16 +194,17 @@ export default async function selectEC2Instance({
 }
 
 if (require.main === module) {
-  selectEC2Instance().then(
-    (instance) => {
-      // eslint-disable-next-line no-console
-      console.log(instance.InstanceId)
-      process.exit(0)
-    },
-    (error) => {
-      // eslint-disable-next-line no-console
-      console.error(error.stack)
-      process.exit(1)
-    }
-  )
+  ;(async () => {
+    const { cli } = await import('./cli')
+    await cli({
+      select: () => selectEC2Instance(),
+      queries: {
+        id: 'InstanceId',
+        'pub-ip': 'PublicIpAddress',
+        'pub-dns': 'PublicDnsName',
+        'priv-ip': 'PrivateIpAddress',
+        'priv-dns': 'PrivateDnsName',
+      },
+    })
+  })()
 }
