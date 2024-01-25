@@ -10,8 +10,8 @@
     "prepublishOnly": "echo This package is meant to be published by semantic-release from the dist build directory. && exit 1"
   },
   "bin": {
-    "select-ec2-instance": "./lib/selectEC2Instance.js",
-    "select-ebs-snapshot": "./lib/selectEBSSnapshot.js"
+    "select-ec2-instance": "./dist/selectEC2Instance.js",
+    "select-ebs-snapshot": "./dist/selectEBSSnapshot.js"
   },
   "repository": {
     "type": "git",
