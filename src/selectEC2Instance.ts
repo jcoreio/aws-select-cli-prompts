@@ -92,6 +92,8 @@ export default async function selectEC2Instance({
   Filters: _Filters = [],
   MaxResults = 100,
   useRecents = true,
+  stdin = process.stdin,
+  stdout = process.stderr,
   ...autocompleteOpts
 }: {
   ec2?: EC2
@@ -113,6 +115,8 @@ export default async function selectEC2Instance({
 
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
+    stdin,
+    stdout,
     message,
     suggest: async (
       input: string,

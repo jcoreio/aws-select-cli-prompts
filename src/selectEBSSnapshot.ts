@@ -92,6 +92,8 @@ export default async function selectEBSSnapshot({
   Filters = [],
   MaxResults = 100,
   useRecents = true,
+  stdin = process.stdin,
+  stdout = process.stderr,
   ...autocompleteOpts
 }: {
   ec2?: EC2
@@ -113,6 +115,8 @@ export default async function selectEBSSnapshot({
 
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
+    stdin,
+    stdout,
     message,
     suggest: async (
       input: string,
