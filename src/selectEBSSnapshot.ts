@@ -14,7 +14,7 @@ import { Readable, Writable } from 'stream'
 import {
   DescribeSnapshotsCommand,
   DescribeSnapshotsRequest,
-  EC2,
+  EC2Client,
   Snapshot,
   SnapshotState,
 } from '@aws-sdk/client-ec2'
@@ -87,7 +87,7 @@ function createChoice(
 }
 
 export default async function selectEBSSnapshot({
-  ec2 = new EC2(),
+  ec2 = new EC2Client(),
   message,
   Filters = [],
   MaxResults = 100,
@@ -96,7 +96,7 @@ export default async function selectEBSSnapshot({
   stdout = process.stderr,
   ...autocompleteOpts
 }: {
-  ec2?: EC2
+  ec2?: EC2Client
   message?: string
   Filters?: DescribeSnapshotsRequest['Filters']
   MaxResults?: number

@@ -11,7 +11,7 @@ import chalk from 'chalk'
 import {
   DescribeInstancesCommand,
   DescribeInstancesRequest,
-  EC2,
+  EC2Client,
   Instance,
   InstanceState,
 } from '@aws-sdk/client-ec2'
@@ -87,7 +87,7 @@ function createChoice(
 }
 
 export default async function selectEC2Instance({
-  ec2 = new EC2(),
+  ec2 = new EC2Client(),
   message,
   Filters: _Filters = [],
   MaxResults = 100,
@@ -96,7 +96,7 @@ export default async function selectEC2Instance({
   stdout = process.stderr,
   ...autocompleteOpts
 }: {
-  ec2?: EC2
+  ec2?: EC2Client
   message?: string
   Filters?: DescribeInstancesRequest['Filters']
   MaxResults?: number
