@@ -30,9 +30,6 @@ dependencies:
     version: 17.7.2
 
 devDependencies:
-  '@babel/plugin-syntax-flow':
-    specifier: ^7.14.5
-    version: 7.23.3(@babel/core@7.23.7)
   '@babel/plugin-transform-react-jsx':
     specifier: ^7.14.9
     version: 7.23.4(@babel/core@7.23.7)
@@ -45,9 +42,6 @@ devDependencies:
   '@jcoreio/toolchain-esnext':
     specifier: ^3.2.1
     version: 3.2.1(@jcoreio/toolchain@3.2.1)
-  '@jcoreio/toolchain-flow':
-    specifier: ^3.2.1
-    version: 3.2.1(@babel/core@7.23.7)(@jcoreio/toolchain-esnext@3.2.1)(@jcoreio/toolchain@3.2.1)(eslint@8.56.0)
   '@jcoreio/toolchain-semantic-release':
     specifier: ^3.2.1
     version: 3.2.1(typescript@5.3.3)
@@ -96,12 +90,6 @@ devDependencies:
   eslint-config-prettier:
     specifier: ^8.3.0
     version: 8.3.0(eslint@8.56.0)
-  eslint-plugin-flowtype:
-    specifier: ^8.0.3
-    version: 8.0.3(@babel/plugin-syntax-flow@7.23.3)(@babel/plugin-transform-react-jsx@7.23.4)(eslint@8.56.0)
-  flow-bin:
-    specifier: ^0.161.0
-    version: 0.161.0
   mocha:
     specifier: ^10.2.0
     version: 10.2.0
@@ -1118,16 +1106,6 @@ packages:
       '@babel/helper-plugin-utils': 7.22.5
     dev: true
 
-  /@babel/plugin-syntax-flow@7.23.3(@babel/core@7.23.7):
-    resolution: {integrity: sha512-YZiAIpkJAwQXBJLIQbRFayR5c+gJ35Vcz3bg954k7cd73zqjvhacJuL9RbrzPz8qPmZdgqP6EUKwy0PCNhaaPA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.23.7
-      '@babel/helper-plugin-utils': 7.22.5
-    dev: true
-
   /@babel/plugin-syntax-import-assertions@7.23.3(@babel/core@7.23.7):
     resolution: {integrity: sha512-lPgDSU+SJLK3xmFDTV2ZRQAiM7UuUjGidwBywFavObCiZc1BeAAcMtHJKUya92hPHO+at63JJPLygilZard8jw==}
     engines: {node: '>=6.9.0'}
@@ -1439,17 +1417,6 @@ packages:
       '@babel/core': 7.23.7
       '@babel/helper-plugin-utils': 7.22.5
       '@babel/plugin-syntax-export-namespace-from': 7.8.3(@babel/core@7.23.7)
-    dev: true
-
-  /@babel/plugin-transform-flow-strip-types@7.23.3(@babel/core@7.23.7):
-    resolution: {integrity: sha512-26/pQTf9nQSNVJCrLB1IkHUKyPxR+lMrH2QDPG89+Znu9rAMbtrybdbWeE9bb7gzjmE5iXHEY+e0HUwM6Co93Q==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.23.7
-      '@babel/helper-plugin-utils': 7.22.5
-      '@babel/plugin-syntax-flow': 7.23.3(@babel/core@7.23.7)
     dev: true
 
   /@babel/plugin-transform-for-of@7.23.6(@babel/core@7.23.7):
@@ -1949,18 +1916,6 @@ packages:
       - supports-color
     dev: true
 
-  /@babel/preset-flow@7.23.3(@babel/core@7.23.7):
-    resolution: {integrity: sha512-7yn6hl8RIv+KNk6iIrGZ+D06VhVY35wLVf23Cz/mMu1zOr7u4MMP4j0nZ9tLf8+4ZFpnib8cFYgB/oYg9hfswA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.23.7
-      '@babel/helper-plugin-utils': 7.22.5
-      '@babel/helper-validator-option': 7.23.5
-      '@babel/plugin-transform-flow-strip-types': 7.23.3(@babel/core@7.23.7)
-    dev: true
-
   /@babel/preset-modules@0.1.6-no-external-plugins(@babel/core@7.23.7):
     resolution: {integrity: sha512-HrcgcIESLm9aIR842yhJ5RWan/gebQUJ6E/E5+rf0y9o6oj7w0Br+sWuL6kEQ/o/AdfvR1Je9jG18/gnpwjEyA==}
     peerDependencies:
@@ -2171,25 +2126,6 @@ packages:
       resolve-bin: 1.0.1
     transitivePeerDependencies:
       - supports-color
-    dev: true
-
-  /@jcoreio/toolchain-flow@3.2.1(@babel/core@7.23.7)(@jcoreio/toolchain-esnext@3.2.1)(@jcoreio/toolchain@3.2.1)(eslint@8.56.0):
-    resolution: {integrity: sha512-sx8qphyg8gesKI+6+e/nO1/T18a4brW/WkhZaJbfjoUQHmg98PUEXYnYl3Yjn7g1dEKeCWXufq/adVxtc35etg==}
-    peerDependencies:
-      '@babel/core': ^7.0.0
-      '@jcoreio/toolchain': 3.2.1
-      '@jcoreio/toolchain-esnext': 3.2.1
-      eslint: ^8.43.0
-    dependencies:
-      '@babel/core': 7.23.7
-      '@babel/plugin-syntax-flow': 7.23.3(@babel/core@7.23.7)
-      '@babel/plugin-transform-react-jsx': 7.23.4(@babel/core@7.23.7)
-      '@babel/preset-flow': 7.23.3(@babel/core@7.23.7)
-      '@jcoreio/toolchain': 3.2.1
-      '@jcoreio/toolchain-esnext': 3.2.1(@jcoreio/toolchain@3.2.1)
-      eslint: 8.56.0
-      eslint-plugin-flowtype: 8.0.3(@babel/plugin-syntax-flow@7.23.3)(@babel/plugin-transform-react-jsx@7.23.4)(eslint@8.56.0)
-      glob: 7.2.0
     dev: true
 
   /@jcoreio/toolchain-semantic-release@3.2.1(typescript@5.3.3):
@@ -4484,21 +4420,6 @@ packages:
       eslint: 8.56.0
     dev: true
 
-  /eslint-plugin-flowtype@8.0.3(@babel/plugin-syntax-flow@7.23.3)(@babel/plugin-transform-react-jsx@7.23.4)(eslint@8.56.0):
-    resolution: {integrity: sha512-dX8l6qUL6O+fYPtpNRideCFSpmWOUVx5QcaGLVqe/vlDiBSe4vYljDWDETwnyFzpl7By/WVIu6rcrniCgH9BqQ==}
-    engines: {node: '>=12.0.0'}
-    peerDependencies:
-      '@babel/plugin-syntax-flow': ^7.14.5
-      '@babel/plugin-transform-react-jsx': ^7.14.9
-      eslint: ^8.1.0
-    dependencies:
-      '@babel/plugin-syntax-flow': 7.23.3(@babel/core@7.23.7)
-      '@babel/plugin-transform-react-jsx': 7.23.4(@babel/core@7.23.7)
-      eslint: 8.56.0
-      lodash: 4.17.21
-      string-natural-compare: 3.0.1
-    dev: true
-
   /eslint-scope@5.1.1:
     resolution: {integrity: sha512-2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==}
     engines: {node: '>=8.0.0'}
@@ -4874,12 +4795,6 @@ packages:
 
   /flatted@3.2.4:
     resolution: {integrity: sha512-8/sOawo8tJ4QOBX8YlQBMxL8+RLZfxMQOif9o0KUKTNTjMYElWPE0r/m5VNFxTRd0NSw8qSy8dajrwX4RYI1Hw==}
-    dev: true
-
-  /flow-bin@0.161.0:
-    resolution: {integrity: sha512-5BKQi+sjOXz67Kbc1teiBwd5e0Da6suW7S5oUCm9VclnzSZ3nlfNZUdrkvgJ5S4w5KDBDToEL7rREpn8rKF1zg==}
-    engines: {node: '>=0.10.0'}
-    hasBin: true
     dev: true
 
   /for-each@0.3.3:
@@ -7398,10 +7313,6 @@ packages:
   /string-argv@0.3.1:
     resolution: {integrity: sha512-a1uQGz7IyVy9YwhqjZIZu1c8JO8dNIe20xBmSS6qu9kv++k3JGzCVmprbNN5Kn+BgzD5E7YYwg1CcjuJMRNsvg==}
     engines: {node: '>=0.6.19'}
-    dev: true
-
-  /string-natural-compare@3.0.1:
-    resolution: {integrity: sha512-n3sPwynL1nwKi3WJ6AIsClwBMa0zTi54fn2oLU6ndfTSIO05xaznjSf15PcBZU6FNWbmN5Q6cxT4V5hGvB4taw==}
     dev: true
 
   /string-width@4.2.3:

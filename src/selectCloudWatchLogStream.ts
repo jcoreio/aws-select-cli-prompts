@@ -59,7 +59,7 @@ function createChoice(
 }
 
 export default async function selectCloudWatchLogStream({
-  logs = new CloudWatchLogsClient({ retryMode: 'adaptive', maxAttempts: 10 }),
+  logs = new CloudWatchLogsClient(),
   logGroupName,
   logGroupIdentifier,
   message,
@@ -142,6 +142,7 @@ export default async function selectCloudWatchLogStream({
               'selectCloudWatchLogStream',
               profile,
               region,
+              logGroupName || logGroupIdentifier || '',
             ])
           ).map((i) => createChoice(i, { recent: true }))
         )
@@ -207,7 +208,12 @@ export default async function selectCloudWatchLogStream({
 
   if (useRecents) {
     await addRecent(
-      ['selectCloudWatchLogStream', profile, region],
+      [
+        'selectCloudWatchLogStream',
+        profile,
+        region,
+        logGroupName || logGroupIdentifier || '',
+      ],
       LogStream,
       (i) => i.arn
     )
