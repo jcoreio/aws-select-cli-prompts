@@ -8,6 +8,7 @@ import {
   Style,
 } from 'async-autocomplete-cli'
 import chalk from 'chalk'
+import stripAnsi from 'strip-ansi'
 
 import { Readable, Writable } from 'stream'
 
@@ -74,14 +75,19 @@ function createChoice(
 ): Choice<ChoiceProps> {
   const { SnapshotId, Description, Tags = [], State, StartTime } = Snapshot
   const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
+  const rest = `  ${column(Description, 32)}  ${column(
+    SnapshotId,
+    22
+  )}  ${column(
+    options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
+    stateLength
+  )}  ${column(formatDate(StartTime), '2022/03/17 17:37'.length)}`
   return {
-    title: `${column(name, 32)}  ${column(Description, 32)}  ${column(
-      SnapshotId,
-      22
-    )}  ${column(
-      options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
-      stateLength
-    )}  ${column(formatDate(StartTime), '2022/03/17 17:37'.length)}`,
+    title:
+      column(
+        name,
+        Math.min(120, process.stdout.columns - stripAnsi(rest).length - 4)
+      ) + rest,
     value: { Snapshot: options?.recent ? undefined : Snapshot, SnapshotId },
   }
 }

@@ -17,6 +17,7 @@ import {
 } from '@aws-sdk/client-ec2'
 import { Readable, Writable } from 'stream'
 import { loadRecents, addRecent } from './recents'
+import stripAnsi from 'strip-ansi'
 
 function column(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,11 +78,16 @@ function createChoice(
 ): Choice<ChoiceProps> {
   const { InstanceId, Tags = [], State, LaunchTime } = Instance
   const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
+  const rest = `  ${column(InstanceId, 19)}  ${column(
+    options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
+    stateLength
+  )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`
   return {
-    title: `${column(name, 32)}  ${column(InstanceId, 19)}  ${column(
-      options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
-      stateLength
-    )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`,
+    title:
+      column(
+        name,
+        Math.min(120, process.stdout.columns - stripAnsi(rest).length - 4)
+      ) + rest,
     value: { Instance: options?.recent ? undefined : Instance, InstanceId },
   }
 }
