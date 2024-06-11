@@ -19,6 +19,9 @@ dependencies:
   fs-extra:
     specifier: ^9.1.0
     version: 9.1.0
+  javascript-time-ago:
+    specifier: ^2.5.10
+    version: 2.5.10
   jmespath:
     specifier: ^0.16.0
     version: 0.16.0
@@ -5747,6 +5750,12 @@ packages:
     engines: {node: '>= 0.6.0'}
     dev: true
 
+  /javascript-time-ago@2.5.10:
+    resolution: {integrity: sha512-EUxp4BP74QH8xiYHyeSHopx1XhMMJ9qEX4rcBdFtpVWmKRdzpxbNzz2GSbuekZr5wt0rmLehuyp0PE34EAJT9g==}
+    dependencies:
+      relative-time-format: 1.1.6
+    dev: false
+
   /jmespath@0.16.0:
     resolution: {integrity: sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==}
     engines: {node: '>= 0.6.0'}
@@ -6986,6 +6995,10 @@ packages:
     dependencies:
       jsesc: 0.5.0
     dev: true
+
+  /relative-time-format@1.1.6:
+    resolution: {integrity: sha512-aCv3juQw4hT1/P/OrVltKWLlp15eW1GRcwP1XdxHrPdZE9MtgqFpegjnTjLhi2m2WI9MT/hQQtE+tjEWG1hgkQ==}
+    dev: false
 
   /replace-ext@0.0.1:
     resolution: {integrity: sha1-KbvZIHinOfC8zitO5B6DeVNSKSQ=}

@@ -19,13 +19,13 @@ import {
 import { Readable, Writable } from 'stream'
 import { loadRecents, addRecent } from './recents'
 import stripAnsi from 'strip-ansi'
-import { formatDate } from './formatDate'
 import { column } from './column'
 import selectCloudWatchLogGroup from './selectCloudWatchLogGroup'
+import timeAgo from './timeAgo'
 
 export type LogStreamForChoice = Pick<
   LogStream,
-  'arn' | 'logStreamName' | 'creationTime'
+  'arn' | 'logStreamName' | 'creationTime' | 'lastEventTimestamp'
 >
 
 type ChoiceProps = {
@@ -38,15 +38,12 @@ function createChoice(
   LogStream: LogStreamForChoice,
   options?: { recent?: boolean }
 ): Choice<ChoiceProps> {
-  const { arn, logStreamName, creationTime } = LogStream
+  const { arn, logStreamName, lastEventTimestamp } = LogStream
   const rest = `  ${
     options?.recent
       ? chalk.magentaBright('(recent)')
       : ' '.repeat('(recent)'.length)
-  }  ${column(
-    formatDate(new Date(creationTime ?? NaN)),
-    '2022/03/17 17:37'.length
-  )}`
+  }  ${column(timeAgo(lastEventTimestamp ?? NaN), '59 minutes ago'.length)}`
   return {
     title:
       column(
@@ -103,6 +100,28 @@ export default async function selectCloudWatchLogStream({
   }
 
   const cachedPages: DescribeLogStreamsCommandOutput[] = []
+  let loadedCount = 0
+
+  const args: DescribeLogStreamsRequest = {
+    limit: 50,
+    logGroupName,
+    logGroupIdentifier,
+    orderBy: 'LastEventTime',
+    descending: true,
+  }
+  async function* paginateWithCache() {
+    yield* cachedPages
+    if (loadedCount >= MaxLoad) return
+    for await (const page of paginateDescribeLogStreams(
+      { client: logs },
+      { ...args, nextToken: cachedPages[cachedPages.length - 1]?.nextToken }
+    )) {
+      cachedPages.push(page)
+      yield page
+      loadedCount += page.logStreams?.length ?? 0
+      if (loadedCount >= MaxLoad) break
+    }
+  }
 
   const selected = await asyncAutocomplete({
     ...autocompleteOpts,
@@ -129,14 +148,6 @@ export default async function selectCloudWatchLogStream({
         yieldChoices(choices)
       }
 
-      let loadedCount = 0
-      const args: DescribeLogStreamsRequest = {
-        limit: 50,
-        logGroupName,
-        logGroupIdentifier,
-        orderBy: 'LastEventTime',
-        descending: true,
-      }
       let regex
       try {
         regex = new RegExp(input.trim(), 'i')
@@ -150,19 +161,7 @@ export default async function selectCloudWatchLogStream({
       const ac = new AbortController()
       cancelationToken.once('canceled', () => ac.abort())
 
-      async function* paginateWithLoaded() {
-        yield* cachedPages
-        for await (const page of paginateDescribeLogStreams(
-          { client: logs },
-          { ...args, nextToken: cachedPages[cachedPages.length - 1]?.nextToken }
-        )) {
-          cachedPages.push(page)
-          yield page
-        }
-      }
-
-      for await (const page of paginateWithLoaded()) {
-        cachedPages.push(page)
+      for await (const page of paginateWithCache()) {
         const { logStreams = [] } = page
         if (ac.signal.aborted) break
         for (const LogStream of logStreams) {
@@ -175,8 +174,6 @@ export default async function selectCloudWatchLogStream({
           if (choices.length >= MaxResults) break
         }
         if (choices.length >= MaxResults) break
-        loadedCount += logStreams.length
-        if (loadedCount >= MaxLoad) break
       }
 
       if (!choices.length) {

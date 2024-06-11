@@ -18,8 +18,8 @@ import {
 import { Readable, Writable } from 'stream'
 import { loadRecents, addRecent } from './recents'
 import stripAnsi from 'strip-ansi'
-import { formatDate } from './formatDate'
 import { column } from './column'
+import timeAgo from './timeAgo'
 
 function formatState(State: InstanceState | null | undefined): string {
   if (!State) return ''
@@ -58,7 +58,7 @@ function createChoice(
   const rest = `  ${column(InstanceId, 19)}  ${column(
     options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
     stateLength
-  )}  ${column(formatDate(LaunchTime), '2022/03/17 17:37'.length)}`
+  )}  ${column(timeAgo(LaunchTime ?? NaN), '59 minutes ago'.length)}`
   return {
     title:
       column(

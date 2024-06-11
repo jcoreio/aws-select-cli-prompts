@@ -17,8 +17,8 @@ import {
 import { Readable, Writable } from 'stream'
 import { loadRecents, addRecent } from './recents'
 import stripAnsi from 'strip-ansi'
-import { formatDate } from './formatDate'
 import { column } from './column'
+import timeAgo from './timeAgo'
 
 export type LogGroupForChoice = Pick<
   LogGroup,
@@ -36,10 +36,7 @@ function createChoice(
     options?.recent
       ? chalk.magentaBright('(recent)')
       : ' '.repeat('(recent)'.length)
-  }  ${column(
-    formatDate(new Date(creationTime ?? NaN)),
-    '2022/03/17 17:37'.length
-  )}`
+  }  ${column(timeAgo(creationTime ?? NaN), '2022/03/17 17:37'.length)}`
   return {
     title:
       column(

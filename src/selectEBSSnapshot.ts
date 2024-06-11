@@ -21,8 +21,8 @@ import {
 } from '@aws-sdk/client-ec2'
 
 import { loadRecents, addRecent } from './recents'
-import { formatDate } from './formatDate'
 import { column } from './column'
+import timeAgo from './timeAgo'
 
 function formatState(State: SnapshotState | null | undefined): string {
   if (!State) return ''
@@ -58,7 +58,7 @@ function createChoice(
   )}  ${column(
     options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
     stateLength
-  )}  ${column(formatDate(StartTime), '2022/03/17 17:37'.length)}`
+  )}  ${column(timeAgo(StartTime ?? NaN), '59 minutes ago'.length)}`
   return {
     title:
       column(
