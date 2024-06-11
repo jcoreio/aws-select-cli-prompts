@@ -18,31 +18,8 @@ import {
 import { Readable, Writable } from 'stream'
 import { loadRecents, addRecent } from './recents'
 import stripAnsi from 'strip-ansi'
-
-function column(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: any,
-  length: number
-): string {
-  value = String(value ?? '').padEnd(length)
-  return value.length > length ? `${value.substring(0, length - 3)}...` : value
-}
-
-function datePart(part: number, length = 2): string {
-  return String(part).padStart(length, '0')
-}
-
-function formatDate(date: Date | null | undefined): string {
-  if (!date) return ''
-  const y = date.getFullYear()
-  const M = date.getMonth() + 1
-  const d = date.getDate()
-  const h = date.getHours()
-  const m = date.getMinutes()
-  return `${datePart(y)}/${datePart(M)}/${datePart(d)} ${datePart(
-    h
-  )}:${datePart(m)}`
-}
+import { formatDate } from './formatDate'
+import { column } from './column'
 
 function formatState(State: InstanceState | null | undefined): string {
   if (!State) return ''
