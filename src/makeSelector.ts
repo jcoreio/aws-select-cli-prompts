@@ -96,13 +96,15 @@ type Columns<Item> =
 
 const RECENT = Symbol('RECENT')
 
-export function makeSelector<Client, OtherOptions, Page, Item, Id>({
+export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   thing,
   things = `${thing}s`,
   defaultLimit,
   recentKey,
   getClient,
+  getOtherOptions,
   getPage,
+  getSearchText,
   refetchRecent,
   getItems,
   getId,
@@ -111,45 +113,50 @@ export function makeSelector<Client, OtherOptions, Page, Item, Id>({
   thing: string
   things?: string
   defaultLimit?: number
-  recentKey: string[]
+  recentKey: string[] | ((otherOptions: OtherOptions) => string[])
   getClient: (config: EC2ClientConfig) => Client
   getPage: (options: {
     client: Client
-    otherOptions?: OtherOptions
+    otherOptions: OtherOptions
     limit?: number
     search?: string
     abortSignal?: AbortSignal
   }) => Promise<Page>
+  getOtherOptions?: (options: any) => OtherOptions | Promise<OtherOptions>
   refetchRecent?: (options: {
+    otherOptions: OtherOptions
     client: Client
     id: Id
     abortSignal?: AbortSignal
   }) => Promise<Item | undefined>
   getItems: (page: Page) => Item[] | undefined
   getId: (item: Item) => Id | undefined
+  getSearchText?: (item: Item) => string | undefined
   columns: Columns<Item>
 }) {
   const createTitle = makeCreateTitle(columns)
-  return async ({
-    client = getClient({}),
-    otherOptions,
-    message,
-    limit = defaultLimit,
-    useRecents = true,
-    stdin = process.stdin,
-    stdout = process.stderr,
-    ...autocompleteOpts
-  }: {
-    client?: Client
-    otherOptions?: OtherOptions
-    useRecents?: boolean
-    message?: string
-    limit?: number
-    style?: Style
-    clearFirst?: boolean
-    stdin?: Readable
-    stdout?: Writable
-  } = {}): Promise<Item> => {
+  return async (
+    {
+      client = getClient({}),
+      message,
+      limit = defaultLimit,
+      useRecents = true,
+      stdin = process.stdin,
+      stdout = process.stderr,
+      style,
+      clearFirst,
+      ...rest
+    }: {
+      client?: Client
+      useRecents?: boolean
+      message?: string
+      limit?: number
+      style?: Style
+      clearFirst?: boolean
+      stdin?: Readable
+      stdout?: Writable
+    } & OtherOptions = {} as any
+  ): Promise<Item> => {
     const region = await (client as any).config.region()
     if (!message) {
       message = `Select ${
@@ -161,29 +168,36 @@ export function makeSelector<Client, OtherOptions, Page, Item, Id>({
       process.env.AWS_PROFILE ||
       (await (client as any).config.credentials()).accessKeyId
 
+    const otherOptions = ((await getOtherOptions?.(rest)) ?? rest) as any
+
+    const finalRecentKey =
+      typeof recentKey === 'function' ? recentKey(otherOptions) : recentKey
+
     let selected: Item | undefined = await asyncAutocomplete({
-      ...autocompleteOpts,
+      limit: process.stdout.rows - 1,
+      style,
+      clearFirst,
       stdin,
       stdout,
       message,
       suggest: async (
-        input: string,
+        search: string,
         cancelationToken: CancelationToken,
         yieldChoices: (choices: Choices<Item>) => void
       ): Promise<Choices<Item> | void> => {
         const choices: Choices<Item> = []
 
-        if (!input && useRecents) {
+        if (!search && useRecents) {
           choices.push(
-            ...(await loadRecents<Item>([...recentKey, profile, region])).map(
-              (item) => {
-                const value = { ...item, [RECENT]: true }
-                return {
-                  value,
-                  title: createTitle(value),
-                }
+            ...(
+              await loadRecents<Item>([...finalRecentKey, profile, region])
+            ).map((item) => {
+              const value = { ...item, [RECENT]: true }
+              return {
+                value,
+                title: createTitle(value),
               }
-            )
+            })
           )
           yieldChoices(choices)
         }
@@ -194,18 +208,24 @@ export function makeSelector<Client, OtherOptions, Page, Item, Id>({
         const page = await getPage({
           client,
           abortSignal: ac.signal,
-          search: input,
+          search,
           otherOptions,
           limit,
         })
 
-        const items =
-          getItems(page)?.map((item) => ({
+        let items = getItems(page) || []
+        if (getSearchText && search) {
+          const searchLower = search.toLowerCase()
+          items = items.filter((item) =>
+            getSearchText(item)?.toLowerCase().includes(searchLower)
+          )
+        }
+        for (const item of items) {
+          choices.push({
             value: item,
             title: createTitle(item),
-          })) || []
-        for (const item of items) choices.push(item)
-
+          })
+        }
         if (!choices.length) {
           choices.push({
             title: chalk.gray(`No matching ${things} found`),
@@ -225,12 +245,16 @@ export function makeSelector<Client, OtherOptions, Page, Item, Id>({
       if (id == null) {
         throw new Error(`failed to get id of selected ${thing}`)
       }
-      selected = await refetchRecent?.({ client, id })
+      selected = await refetchRecent?.({
+        client,
+        id,
+        otherOptions,
+      })
     }
     if (!selected) throw new Error(`recent ${thing} not found: ${id}`)
 
     if (useRecents) {
-      await addRecent([...recentKey, profile, region], selected, getId)
+      await addRecent([...finalRecentKey, profile, region], selected, getId)
     }
     return selected
   }

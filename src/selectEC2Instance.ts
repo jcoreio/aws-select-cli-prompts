@@ -32,9 +32,7 @@ const selectEC2Instance = makeSelector({
     __Name__: {
       get: (i) => i.Tags?.find((t) => t.Key === 'Name')?.Value,
     },
-    InstanceId: {
-      width: 19,
-    },
+    InstanceId: { width: 19 },
     'State.Name': {
       showRecent: true,
       format: {
@@ -51,9 +49,7 @@ const selectEC2Instance = makeSelector({
       },
       width: '🟠 Shutting Down'.length,
     },
-    LaunchTime: {
-      format: timeAgo,
-    },
+    LaunchTime: { format: timeAgo },
   },
 })
 

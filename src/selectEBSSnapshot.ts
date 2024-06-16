@@ -60,7 +60,7 @@ if (require.main === module) {
       select: () => selectEBSSnapshot(),
       queries: {
         id: 'SnapshotId',
-        vol: 'VolumneId',
+        vol: 'VolumeId',
       },
     })
   })()
