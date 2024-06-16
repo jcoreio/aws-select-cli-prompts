@@ -1,0 +1,326 @@
+import { EC2ClientConfig } from '@aws-sdk/client-ec2'
+import {
+  CancelationToken,
+  Choices,
+  Style,
+  asyncAutocomplete,
+} from 'async-autocomplete-cli'
+import chalk, { Chalk } from 'chalk'
+import { Readable, Writable } from 'stream'
+import { addRecent, loadRecents } from './recents'
+import { get as valueAtPath } from 'lodash'
+import timeAgo from './timeAgo'
+
+type PathIn<T> = T extends Array<infer E>
+  ? `[${number}]${SubpathIn<E>}`
+  : T extends object
+  ? ObjectPath<T, keyof T>
+  : never
+
+type ObjectPath<T, K> = K extends string & keyof T
+  ? `${K}${SubpathIn<T[K]>}`
+  : never
+
+type SubpathIn<T> = T extends Array<infer E>
+  ? `[${number}]${SubpathIn<E>}`
+  : T extends object
+  ? `.${ObjectPath<T, keyof T>}`
+  : ''
+
+type PathAndTypeIn<T, Path extends string = ''> = NonNullable<T> extends Date
+  ? [Path, T]
+  : NonNullable<T> extends Array<infer E>
+  ? PathAndTypeIn<E, `${Path}[${number}]`>
+  : NonNullable<T> extends object
+  ? ObjectPathAndType<NonNullable<T>, Path, keyof NonNullable<T>>
+  : [Path, T]
+
+type ObjectPathAndType<T, Path extends string, K> = K extends string & keyof T
+  ? PathAndTypeIn<T[K], Path extends '' ? K : `${Path}.${K}`>
+  : never
+
+type PathsOf<T> = T extends [infer Path, any] ? Path : never
+
+type ValueOfPath<PathAndTypeTuples, Path> = PathAndTypeTuples extends [
+  Path,
+  infer Value
+]
+  ? Value
+  : never
+
+type PathAndTypeMap<T> = {
+  [Path in PathsOf<PathAndTypeIn<T>>]: ValueOfPath<PathAndTypeIn<T>, Path>
+}
+
+type BasicColumnProps = {
+  width?: number
+  basis?: number
+  minWidth?: number
+  showRecent?: boolean
+}
+
+type ColumnMap<Item, Obj = PathAndTypeMap<Item>> = {
+  [K in keyof Obj]?: {
+    format?:
+      | ((value: Obj[K]) => string)
+      | (NonNullable<Obj[K]> extends string
+          ? { [Value in NonNullable<Obj[K]>]?: string } & {
+              __other__?: (value: any) => string
+            }
+          : never)
+    colors?: NonNullable<Obj[K]> extends string
+      ? { [Value in NonNullable<Obj[K]> | '__other__']?: Chalk }
+      : never
+  } & BasicColumnProps
+} & {
+  [K in `__${string}__`]?: {
+    get: (item: Item) => any
+    format?: (value: any) => string
+    colors?: Record<string, Chalk>
+  } & BasicColumnProps
+}
+
+type NormalizedColumn<Item> = {
+  get: (item: Item) => any
+  format: (item: Item, value: any) => string
+  colors?: Record<string, Chalk>
+} & BasicColumnProps
+
+type Columns<Item> =
+  | ({
+      get: PathIn<Item> | ((item: Item) => any)
+      format?: (value: any) => string
+      colors?: Record<string, Chalk>
+    } & BasicColumnProps)[]
+  | ColumnMap<Item>
+
+const RECENT = Symbol('RECENT')
+
+export function makeSelector<Client, OtherOptions, Page, Item, Id>({
+  thing,
+  things = `${thing}s`,
+  defaultLimit,
+  recentKey,
+  getClient,
+  getPage,
+  refetchRecent,
+  getItems,
+  getId,
+  columns,
+}: {
+  thing: string
+  things?: string
+  defaultLimit?: number
+  recentKey: string[]
+  getClient: (config: EC2ClientConfig) => Client
+  getPage: (options: {
+    client: Client
+    otherOptions?: OtherOptions
+    limit?: number
+    search?: string
+    abortSignal?: AbortSignal
+  }) => Promise<Page>
+  refetchRecent?: (options: {
+    client: Client
+    id: Id
+    abortSignal?: AbortSignal
+  }) => Promise<Item | undefined>
+  getItems: (page: Page) => Item[] | undefined
+  getId: (item: Item) => Id | undefined
+  columns: Columns<Item>
+}) {
+  const createTitle = makeCreateTitle(columns)
+  return async ({
+    client = getClient({}),
+    otherOptions,
+    message,
+    limit = defaultLimit,
+    useRecents = true,
+    stdin = process.stdin,
+    stdout = process.stderr,
+    ...autocompleteOpts
+  }: {
+    client?: Client
+    otherOptions?: OtherOptions
+    useRecents?: boolean
+    message?: string
+    limit?: number
+    style?: Style
+    clearFirst?: boolean
+    stdin?: Readable
+    stdout?: Writable
+  } = {}): Promise<Item> => {
+    const region = await (client as any).config.region()
+    if (!message) {
+      message = `Select ${
+        /^[aeiou]/i.test(thing) ? 'an' : 'a'
+      } ${thing} (region: ${region})`
+    }
+
+    const profile =
+      process.env.AWS_PROFILE ||
+      (await (client as any).config.credentials()).accessKeyId
+
+    let selected: Item | undefined = await asyncAutocomplete({
+      ...autocompleteOpts,
+      stdin,
+      stdout,
+      message,
+      suggest: async (
+        input: string,
+        cancelationToken: CancelationToken,
+        yieldChoices: (choices: Choices<Item>) => void
+      ): Promise<Choices<Item> | void> => {
+        const choices: Choices<Item> = []
+
+        if (!input && useRecents) {
+          choices.push(
+            ...(await loadRecents<Item>([...recentKey, profile, region])).map(
+              (item) => {
+                const value = { ...item, [RECENT]: true }
+                return {
+                  value,
+                  title: createTitle(value),
+                }
+              }
+            )
+          )
+          yieldChoices(choices)
+        }
+
+        if (cancelationToken.canceled) return []
+        const ac = new AbortController()
+        cancelationToken.once('canceled', () => ac.abort())
+        const page = await getPage({
+          client,
+          abortSignal: ac.signal,
+          search: input,
+          otherOptions,
+          limit,
+        })
+
+        const items =
+          getItems(page)?.map((item) => ({
+            value: item,
+            title: createTitle(item),
+          })) || []
+        for (const item of items) choices.push(item)
+
+        if (!choices.length) {
+          choices.push({
+            title: chalk.gray(`No matching ${things} found`),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: undefined as any,
+          })
+        }
+
+        return choices
+      },
+    })
+    if (!selected) throw new Error(`no ${thing} was selected`)
+
+    const id = getId(selected)
+
+    if ((selected as any)[RECENT]) {
+      if (id == null) {
+        throw new Error(`failed to get id of selected ${thing}`)
+      }
+      selected = await refetchRecent?.({ client, id })
+    }
+    if (!selected) throw new Error(`recent ${thing} not found: ${id}`)
+
+    if (useRecents) {
+      await addRecent([...recentKey, profile, region], selected, getId)
+    }
+    return selected
+  }
+}
+
+function makeCreateTitle<Item>(columns: Columns<Item>): (item: Item) => string {
+  const normalizedColumns: NormalizedColumn<Item>[] = []
+  if (Array.isArray(columns)) {
+    for (const { get, format, showRecent, ...rest } of columns) {
+      normalizedColumns.push({
+        ...rest,
+        ...(format === timeAgo ? { width: '59 minutes ago'.length } : {}),
+        get: (item: Item) => {
+          return typeof get === 'string' ? valueAtPath(item, get) : get(item)
+        },
+        format: (item: Item, value: any) =>
+          showRecent && (item as any)[RECENT]
+            ? '(recent)'
+            : value == null
+            ? ''
+            : format
+            ? format(value)
+            : value,
+      })
+    }
+  } else {
+    for (const key of Object.keys(columns) as (keyof Columns<Item>)[]) {
+      const column = columns[key]
+      const format = column?.format
+      const showRecent = column?.showRecent
+      normalizedColumns.push({
+        ...columns[key],
+        ...(format === timeAgo ? { width: '59 minutes ago'.length } : {}),
+        get: /^__.*__$/.test(key)
+          ? (column as any).get
+          : (item: Item) => valueAtPath(item, key),
+        format: (item, value) =>
+          showRecent && (item as any)[RECENT]
+            ? '(recent)'
+            : value == null
+            ? ''
+            : typeof format === 'function'
+            ? format(value)
+            : format?.[value] ?? (format as any)?.__other__?.(value) ?? value,
+      })
+    }
+  }
+  return (item: Item): string => {
+    const separator = '  '
+    const fixedWidth = normalizedColumns.reduce(
+      (total, c) => total + (c.width ?? c.minWidth ?? 0),
+      separator.length * (normalizedColumns.length - 1)
+    )
+    const totalBasis = Math.max(
+      1,
+      normalizedColumns.reduce(
+        (total, c) => total + (c.basis ?? (c.width != null ? 0 : 1)),
+        0
+      )
+    )
+    const remainingWidth = Math.max(0, process.stdout.columns - fixedWidth - 4)
+    const columnWidths = normalizedColumns.map(
+      ({ width, minWidth, basis = 1 }) =>
+        width ??
+        Math.max(
+          minWidth ?? 0,
+          Math.floor((remainingWidth * basis) / totalBasis)
+        )
+    )
+    return normalizedColumns
+      .map((c, i) => {
+        const width = columnWidths[i]
+        const value = c.get(item)
+        let formatted = c.format(item, value)
+        if (formatted.length > width) {
+          const leftHalf = Math.floor(width / 2)
+          const rightHalf = width - leftHalf - 1
+          formatted = [
+            formatted.substring(0, leftHalf),
+            formatted.substring(formatted.length - rightHalf),
+          ].join('…')
+        } else if (formatted.length < width) {
+          formatted = formatted.padEnd(width)
+        }
+        if (c.showRecent && (item as any)[RECENT]) {
+          formatted = chalk.magenta(formatted)
+        } else if (c.colors?.[value]) formatted = c.colors[value](formatted)
+        else if (c.colors?.__other__) formatted = c.colors.__other__(formatted)
+        return formatted
+      })
+      .join(separator)
+  }
+}

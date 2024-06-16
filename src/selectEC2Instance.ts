@@ -1,184 +1,63 @@
 #!/usr/bin/env node
 
-import {
-  asyncAutocomplete,
-  CancelationToken,
-  Choice,
-  Choices,
-  Style,
-} from 'async-autocomplete-cli'
 import chalk from 'chalk'
-import {
-  DescribeInstancesCommand,
-  DescribeInstancesRequest,
-  EC2Client,
-  Instance,
-  InstanceState,
-} from '@aws-sdk/client-ec2'
-import { Readable, Writable } from 'stream'
-import { loadRecents, addRecent } from './recents'
-import stripAnsi from 'strip-ansi'
-import { column } from './column'
+import { DescribeInstancesCommand, EC2Client } from '@aws-sdk/client-ec2'
 import timeAgo from './timeAgo'
+import { makeSelector } from './makeSelector'
 
-function formatState(State: InstanceState | null | undefined): string {
-  if (!State) return ''
-  switch (State.Name) {
-    case 'pending':
-      return chalk.gray('🔵 Pending')
-    case 'running':
-      return chalk.green('🟢 Running')
-    case 'shutting-down':
-      return chalk.gray('🟠 Shutting Down')
-    case 'terminated':
-      return chalk.gray('⚫️ Terminated')
-    case 'stopping':
-      return chalk.gray('🟠 Stopping')
-    case 'stopped':
-      return chalk.gray('🔴 Stopped')
-  }
-  return chalk.gray(State.Name)
-}
-
-const stateLength = formatState({ Code: 32, Name: 'shutting-down' }).length
-
-export type InstanceForChoice = Pick<
-  Instance,
-  'InstanceId' | 'Tags' | 'State' | 'LaunchTime'
->
-
-type ChoiceProps = { Instance?: Instance; InstanceId?: string }
-
-function createChoice(
-  Instance: InstanceForChoice,
-  options?: { recent?: boolean }
-): Choice<ChoiceProps> {
-  const { InstanceId, Tags = [], State, LaunchTime } = Instance
-  const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
-  const rest = `  ${column(InstanceId, 19)}  ${column(
-    options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
-    stateLength
-  )}  ${column(timeAgo(LaunchTime ?? NaN), '59 minutes ago'.length)}`
-  return {
-    title:
-      column(
-        name,
-        Math.min(120, process.stdout.columns - stripAnsi(rest).length - 4)
-      ) + rest,
-    value: { Instance: options?.recent ? undefined : Instance, InstanceId },
-  }
-}
-
-export default async function selectEC2Instance({
-  ec2 = new EC2Client(),
-  message,
-  Filters: _Filters = [],
-  MaxResults = 100,
-  useRecents = true,
-  stdin = process.stdin,
-  stdout = process.stderr,
-  ...autocompleteOpts
-}: {
-  ec2?: EC2Client
-  message?: string
-  Filters?: DescribeInstancesRequest['Filters']
-  MaxResults?: number
-  useRecents?: boolean
-  limit?: number
-  style?: Style
-  clearFirst?: boolean
-  stdin?: Readable
-  stdout?: Writable
-} = {}): Promise<Instance> {
-  const region = await ec2.config.region()
-  if (!message) message = `Select an EC2 Instance (region: ${region})`
-
-  const profile =
-    process.env.AWS_PROFILE || (await ec2.config.credentials()).accessKeyId
-
-  const selected = await asyncAutocomplete({
-    ...autocompleteOpts,
-    stdin,
-    stdout,
-    message,
-    suggest: async (
-      input: string,
-      cancelationToken: CancelationToken,
-      yieldChoices: (choices: Choices<ChoiceProps>) => void
-    ): Promise<Choices<ChoiceProps> | void> => {
-      const choices: Choices<ChoiceProps> = []
-
-      if (!input && useRecents) {
-        choices.push(
-          ...(
-            await loadRecents<Instance>(['selectEC2Instance', profile, region])
-          ).map((i) => createChoice(i, { recent: true }))
-        )
-        yieldChoices(choices)
-      }
-
-      const Filters: DescribeInstancesRequest['Filters'] = [..._Filters]
-      if (input)
-        Filters.push({
-          Name: 'tag:Name',
-          Values: [`*${input}*`],
-        })
-      const args: DescribeInstancesRequest = { MaxResults }
-      if (Filters.length) args.Filters = Filters
-      if (cancelationToken.canceled) return []
-      const ac = new AbortController()
-      cancelationToken.once('canceled', () => ac.abort())
-      const { Reservations } = await ec2.send(
-        new DescribeInstancesCommand(args),
-        {
-          abortSignal: ac.signal,
-        }
-      )
-
-      for (const { Instances } of Reservations || []) {
-        for (const Instance of Instances || []) {
-          choices.push({
-            ...createChoice(Instance),
-            initial: !choices.length,
-          })
-        }
-      }
-
-      if (!choices.length) {
-        choices.push({
-          title: chalk.gray('No matching EC2 Instances found'),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: undefined as any,
-        })
-      }
-
-      return choices
-    },
-  })
-  if (!selected) throw new Error('no EC2 instance was selected')
-
-  let { Instance } = selected
-  const { InstanceId } = selected
-
-  if (!Instance && InstanceId) {
-    const described = await ec2.send(
+const selectEC2Instance = makeSelector({
+  thing: 'EC2 Instance',
+  recentKey: ['selectEC2Instance'],
+  defaultLimit: 100,
+  getClient: (config) => new EC2Client(config),
+  getPage: ({ client, search, limit, abortSignal }) =>
+    client.send(
       new DescribeInstancesCommand({
-        InstanceIds: [InstanceId],
+        ...(search && {
+          Filters: [{ Name: 'tag:Name', Values: [`*${search}*`] }],
+        }),
+        MaxResults: limit,
+      }),
+      { abortSignal }
+    ),
+  getItems: (page) => page.Reservations?.flatMap((r) => r.Instances || []),
+  getId: (item) => item.InstanceId,
+  refetchRecent: ({ client, id, abortSignal }) =>
+    client
+      .send(new DescribeInstancesCommand({ InstanceIds: [id] }), {
+        abortSignal,
       })
-    )
-    Instance = described.Reservations?.[0]?.Instances?.[0]
-  }
-  if (!Instance) throw new Error(`failed to describe instance: ${InstanceId}`)
+      .then((r) => r?.Reservations?.[0]?.Instances?.[0]),
+  columns: {
+    __Name__: {
+      get: (i) => i.Tags?.find((t) => t.Key === 'Name')?.Value,
+    },
+    InstanceId: {
+      width: 19,
+    },
+    'State.Name': {
+      showRecent: true,
+      format: {
+        pending: '🔵 Pending',
+        running: '🟢 Running',
+        'shutting-down': '🟠 Shutting Down',
+        terminated: '⚫️ Terminated',
+        stopping: '🟠 Stopping',
+        stopped: '🔴 Stopped',
+      },
+      colors: {
+        running: chalk.green,
+        __other__: chalk.gray,
+      },
+      width: '🟠 Shutting Down'.length,
+    },
+    LaunchTime: {
+      format: timeAgo,
+    },
+  },
+})
 
-  if (useRecents) {
-    await addRecent(
-      ['selectEC2Instance', profile, region],
-      Instance,
-      (i) => i.InstanceId
-    )
-  }
-  return Instance
-}
+export default selectEC2Instance
 
 if (require.main === module) {
   ;(async () => {

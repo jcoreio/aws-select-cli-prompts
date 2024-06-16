@@ -1,196 +1,57 @@
 #!/usr/bin/env node
 
-import {
-  asyncAutocomplete,
-  CancelationToken,
-  Choice,
-  Choices,
-  Style,
-} from 'async-autocomplete-cli'
 import chalk from 'chalk'
-import stripAnsi from 'strip-ansi'
-
-import { Readable, Writable } from 'stream'
-
-import {
-  DescribeSnapshotsCommand,
-  DescribeSnapshotsRequest,
-  EC2Client,
-  Snapshot,
-  SnapshotState,
-} from '@aws-sdk/client-ec2'
-
-import { loadRecents, addRecent } from './recents'
-import { column } from './column'
+import { DescribeSnapshotsCommand, EC2Client } from '@aws-sdk/client-ec2'
 import timeAgo from './timeAgo'
+import { makeSelector } from './makeSelector'
 
-function formatState(State: SnapshotState | null | undefined): string {
-  if (!State) return ''
-  switch (State) {
-    case 'pending':
-      return chalk.gray('🔵 Pending')
-    case 'completed':
-      return chalk.green('🟢 Completed')
-    case 'error':
-      return chalk.gray('🔴 Error')
-  }
-  return chalk.gray(State)
-}
-
-const stateLength = formatState('completed').length
-
-export type SnapshotForChoice = Pick<
-  Snapshot,
-  'SnapshotId' | 'Description' | 'Tags' | 'StartTime' | 'State'
->
-
-type ChoiceProps = { Snapshot?: Snapshot; SnapshotId?: string }
-
-function createChoice(
-  Snapshot: SnapshotForChoice,
-  options?: { recent?: boolean }
-): Choice<ChoiceProps> {
-  const { SnapshotId, Description, Tags = [], State, StartTime } = Snapshot
-  const name = (Tags.find((t) => t.Key === 'Name') || {}).Value
-  const rest = `  ${column(Description, 32)}  ${column(
-    SnapshotId,
-    22
-  )}  ${column(
-    options?.recent ? chalk.magentaBright('(recent)') : formatState(State),
-    stateLength
-  )}  ${column(timeAgo(StartTime ?? NaN), '59 minutes ago'.length)}`
-  return {
-    title:
-      column(
-        name,
-        Math.min(120, process.stdout.columns - stripAnsi(rest).length - 4)
-      ) + rest,
-    value: { Snapshot: options?.recent ? undefined : Snapshot, SnapshotId },
-  }
-}
-
-export default async function selectEBSSnapshot({
-  ec2 = new EC2Client(),
-  message,
-  Filters = [],
-  MaxResults = 100,
-  useRecents = true,
-  stdin = process.stdin,
-  stdout = process.stderr,
-  ...autocompleteOpts
-}: {
-  ec2?: EC2Client
-  message?: string
-  Filters?: DescribeSnapshotsRequest['Filters']
-  MaxResults?: number
-  useRecents?: boolean
-  limit?: number
-  style?: Style
-  clearFirst?: boolean
-  stdin?: Readable
-  stdout?: Writable
-} = {}): Promise<Snapshot> {
-  const region = await ec2.config.region()
-  if (!message) message = `Select an EBS Snapshot (region: ${region})`
-
-  const profile =
-    process.env.AWS_PROFILE || (await ec2.config.credentials()).accessKeyId
-
-  const selected = await asyncAutocomplete({
-    ...autocompleteOpts,
-    stdin,
-    stdout,
-    message,
-    suggest: async (
-      input: string,
-      cancelationToken: CancelationToken,
-      yieldChoices: (choices: Choices<ChoiceProps>) => void
-    ): Promise<Choices<ChoiceProps> | void> => {
-      const choices: Choices<ChoiceProps> = []
-
-      if (!input && useRecents) {
-        choices.push(
-          ...(
-            await loadRecents<Snapshot>(['selectEBSSnapshot', profile, region])
-          ).map((i) => createChoice(i, { recent: true }))
-        )
-        yieldChoices(choices)
-      }
-
-      const args: DescribeSnapshotsRequest = {
-        MaxResults: Math.floor(MaxResults / 2),
-      }
-
-      if (cancelationToken.canceled) return []
-      const ac = new AbortController()
-      cancelationToken.once('canceled', () => ac.abort())
-
-      const [{ Snapshots: Snapshots1 }, { Snapshots: Snapshots2 }] =
-        await Promise.all([
-          ec2.send(
-            new DescribeSnapshotsCommand({
-              ...args,
-              Filters: [
-                ...Filters,
-                { Name: 'tag:Name', Values: [`*${input}*`] },
-              ],
-            }),
-            { abortSignal: ac.signal }
-          ),
-          ec2.send(
-            new DescribeSnapshotsCommand({
-              ...args,
-              Filters: [
-                ...Filters,
-                { Name: 'description', Values: [`*${input}*`] },
-              ],
-            }),
-            { abortSignal: ac.signal }
-          ),
-        ])
-
-      for (const Snapshot of [...(Snapshots1 || []), ...(Snapshots2 || [])]) {
-        choices.push({
-          ...createChoice(Snapshot),
-          initial: !choices.length,
-        })
-      }
-
-      if (!choices.length) {
-        choices.push({
-          title: chalk.gray('No matching EBS Snapshots found'),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: undefined as any,
-        })
-      }
-
-      return choices
-    },
-  })
-  if (!selected) throw new Error('no EBS snapshot was selected')
-
-  let { Snapshot } = selected
-  const { SnapshotId } = selected
-
-  if (!Snapshot && SnapshotId) {
-    const described = await ec2.send(
+const selectEBSSnapshot = makeSelector({
+  thing: 'EBS Snapshot',
+  recentKey: ['selectEBSSnapshot'],
+  defaultLimit: 100,
+  getClient: (config) => new EC2Client(config),
+  getPage: ({ client, search, limit, abortSignal }) =>
+    client.send(
       new DescribeSnapshotsCommand({
-        SnapshotIds: [SnapshotId],
+        ...(search && {
+          Filters: [{ Name: 'tag:Name', Values: [`*${search}*`] }],
+        }),
+        MaxResults: limit,
+      }),
+      { abortSignal }
+    ),
+  getItems: (page) => page.Snapshots,
+  getId: (item) => item.SnapshotId,
+  refetchRecent: ({ client, id, abortSignal }) =>
+    client
+      .send(new DescribeSnapshotsCommand({ SnapshotIds: [id] }), {
+        abortSignal,
       })
-    )
-    Snapshot = described.Snapshots?.[0]
-  }
-  if (!Snapshot) throw new Error(`failed to describe snapshot: ${SnapshotId}`)
-
-  if (useRecents) {
-    await addRecent(
-      ['selectEBSSnapshot', profile, region],
-      Snapshot,
-      (s) => s.SnapshotId
-    )
-  }
-  return Snapshot
-}
+      .then((r) => r.Snapshots?.[0]),
+  columns: {
+    __Name__: {
+      get: (i) => i.Tags?.find((t) => t.Key === 'Name')?.Value,
+      basis: 1,
+    },
+    Description: { basis: 2 },
+    SnapshotId: { width: 22 },
+    State: {
+      showRecent: true,
+      format: {
+        pending: '🔵 Pending',
+        completed: '🟢 Completed',
+        error: '🔴 Error',
+      },
+      colors: {
+        completed: chalk.green,
+        __other__: chalk.gray,
+      },
+      width: '🟢 Completed'.length,
+    },
+    StartTime: { format: timeAgo },
+  },
+})
+export default selectEBSSnapshot
 
 if (require.main === module) {
   ;(async () => {
