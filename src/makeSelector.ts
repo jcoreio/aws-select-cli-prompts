@@ -126,6 +126,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   refetchRecent?: (options: {
     otherOptions: OtherOptions
     client: Client
+    item: Item
     id: Id
     abortSignal?: AbortSignal
   }) => Promise<Item | undefined>
@@ -247,6 +248,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       }
       selected = await refetchRecent?.({
         client,
+        item: selected,
         id,
         otherOptions,
       })
