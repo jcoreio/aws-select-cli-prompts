@@ -20,9 +20,10 @@ const selectCloudFormationStack = makeSelector({
       .send(new DescribeStacksCommand({ StackName }), { abortSignal })
       .then((r) => r.Stacks?.[0]),
   columns: {
-    StackName: {},
+    StackName: { grow: 2 },
     StackStatus: {
       minWidth: 'UPDATE_ROLLBACK_FAILED'.length,
+      grow: 1,
       colors: {
         CREATE_COMPLETE: chalk.green,
         CREATE_FAILED: chalk.red,
@@ -50,7 +51,7 @@ const selectCloudFormationStack = makeSelector({
       },
     },
     LastUpdatedTime: { format: timeAgo },
-    Description: {},
+    Description: { grow: 2 },
   },
 })
 

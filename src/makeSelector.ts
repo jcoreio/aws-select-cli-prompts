@@ -54,7 +54,7 @@ type PathAndTypeMap<T> = {
 
 type BasicColumnProps = {
   width?: number
-  basis?: number
+  grow?: number
   minWidth?: number
   showRecent?: boolean
 }
@@ -307,24 +307,21 @@ function makeCreateTitle<Item>(columns: Columns<Item>): (item: Item) => string {
   return (item: Item): string => {
     const separator = '  '
     const fixedWidth = normalizedColumns.reduce(
-      (total, c) => total + (c.width ?? c.minWidth ?? 0),
+      (total, c) => total + (c.width ?? 0),
       separator.length * (normalizedColumns.length - 1)
     )
-    const totalBasis = Math.max(
+    const totalGrow = Math.max(
       1,
       normalizedColumns.reduce(
-        (total, c) => total + (c.basis ?? (c.width != null ? 0 : 1)),
+        (total, c) => total + (c.grow ?? (c.width != null ? 0 : 1)),
         0
       )
     )
     const remainingWidth = Math.max(0, process.stdout.columns - fixedWidth - 4)
     const columnWidths = normalizedColumns.map(
-      ({ width, minWidth, basis = 1 }) =>
+      ({ width, minWidth, grow = 1 }) =>
         width ??
-        Math.max(
-          minWidth ?? 0,
-          Math.floor((remainingWidth * basis) / totalBasis)
-        )
+        Math.max(minWidth ?? 0, Math.floor((remainingWidth * grow) / totalGrow))
     )
     return normalizedColumns
       .map((c, i) => {

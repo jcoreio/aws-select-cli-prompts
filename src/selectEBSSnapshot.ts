@@ -31,9 +31,9 @@ const selectEBSSnapshot = makeSelector({
   columns: {
     __Name__: {
       get: (i) => i.Tags?.find((t) => t.Key === 'Name')?.Value,
-      basis: 1,
+      grow: 1,
     },
-    Description: { basis: 2 },
+    Description: { grow: 2 },
     SnapshotId: { width: 22 },
     State: {
       showRecent: true,
