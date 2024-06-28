@@ -108,7 +108,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   refetchRecent,
   getItems,
   getId,
-  columns,
+  columns: defaultColumns,
 }: {
   thing: string
   things?: string
@@ -135,7 +135,6 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   getSearchText?: (item: Item) => string | undefined
   columns: Columns<Item>
 }) {
-  const createTitle = makeCreateTitle(columns)
   return async (
     {
       client = getClient({}),
@@ -147,6 +146,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       style,
       clearFirst,
       filterItems = () => true,
+      columns = defaultColumns,
       ...rest
     }: {
       client?: Client
@@ -158,8 +158,11 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       stdin?: Readable
       stdout?: Writable
       filterItems?: (item: Item) => boolean
+      columns?: Columns<Item>
     } & OtherOptions = {} as any
   ): Promise<Item> => {
+    const createTitle = makeCreateTitle(columns)
+
     const region = await (client as any).config.region()
     if (!message) {
       message = `Select ${
