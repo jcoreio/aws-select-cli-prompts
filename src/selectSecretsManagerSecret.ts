@@ -6,7 +6,7 @@ import {
 import { makeSelector } from './makeSelector'
 import timeAgo from './timeAgo'
 
-const selectSecret = makeSelector({
+const selectSecretsManagerSecret = makeSelector({
   thing: 'Secrets Manager Secret',
   recentKey: ['secretsManagerSecret'],
   getClient: (config) => new SecretsManagerClient(config),
@@ -34,13 +34,13 @@ const selectSecret = makeSelector({
     },
   },
 })
-export default selectSecret
+export default selectSecretsManagerSecret
 
 if (require.main === module) {
   ;(async () => {
     const { cli } = await import('./cli')
     await cli({
-      select: () => selectSecret(),
+      select: () => selectSecretsManagerSecret(),
       queries: {
         arn: 'ARN',
       },
