@@ -79,6 +79,7 @@
     "yargs": "^17.7.2"
   },
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "engines": {
     "node": ">=16"
