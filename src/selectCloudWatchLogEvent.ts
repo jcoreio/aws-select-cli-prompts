@@ -55,7 +55,7 @@ export default async function selectCloudWatchLogEvent({
   logs = new CloudWatchLogsClient(),
   logGroupName,
   logGroupIdentifier,
-  logStreamName,
+  logStreamName: _logStreamName,
   startTime,
   message,
   useRecents = true,
@@ -91,16 +91,21 @@ export default async function selectCloudWatchLogEvent({
     }))
   }
 
+  const logStreamName =
+    _logStreamName ||
+    (
+      await selectCloudWatchLogStream({
+        logs,
+        logGroupName,
+        logGroupIdentifier,
+        stdin,
+        stdout,
+        useRecents,
+        ...autocompleteOpts,
+      })
+    ).logStreamName
   if (!logStreamName) {
-    ;({ logStreamName } = await selectCloudWatchLogStream({
-      logs,
-      logGroupName,
-      logGroupIdentifier,
-      stdin,
-      stdout,
-      useRecents,
-      ...autocompleteOpts,
-    }))
+    throw new Error(`failed to get logStreamName`)
   }
 
   if (startTime == null) {
@@ -190,7 +195,7 @@ export default async function selectCloudWatchLogEvent({
               stopOnSameToken: true,
             },
             {
-              logStreamNames: [logStreamName!],
+              logStreamNames: [logStreamName],
               filterPattern,
               logGroupIdentifier,
               logGroupName,

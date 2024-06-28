@@ -1,7 +1,6 @@
 import os from 'os'
 import path from 'path'
 import fs from 'fs-extra'
-import { InstanceForChoice } from './selectEC2Instance'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const RECENTS_FILE = path.join(
@@ -47,7 +46,7 @@ export async function addRecent<T>(
     const key = JSON.stringify(category)
     await fs.mkdirs(path.dirname(RECENTS_FILE))
     const original = await fs.readJson(RECENTS_FILE).catch(() => ({}))
-    const list: InstanceForChoice[] = (original?.[key] || []).filter(
+    const list: object[] = (original?.[key] || []).filter(
       (c: any) => getId(c) !== getId(newRecent)
     )
     list.unshift(newRecent as any)

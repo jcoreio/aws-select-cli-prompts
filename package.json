@@ -10,11 +10,14 @@
     "prepublishOnly": "echo This package is meant to be published by semantic-release from the dist build directory. && exit 1"
   },
   "bin": {
-    "select-ec2-instance": "./dist/selectEC2Instance.js",
-    "select-ebs-snapshot": "./dist/selectEBSSnapshot.js",
+    "select-cloud-formation-stack": "./dist/selectCloudFormationStack.js",
+    "select-cloudwatch-log-event": "./dist/selectCloudWatchLogEvent.js",
     "select-cloudwatch-log-group": "./dist/selectCloudWatchLogGroup.js",
     "select-cloudwatch-log-stream": "./dist/selectCloudWatchLogStream.js",
-    "select-cloudwatch-log-event": "./dist/selectCloudWatchLogEvent.js"
+    "select-ebs-snapshot": "./dist/selectEBSSnapshot.js",
+    "select-ec2-instance": "./dist/selectEC2Instance.js",
+    "select-route-53-hosted-zone": "./dist/selectRoute53HostedZone.js",
+    "select-route-53-record-set": "./dist/selectRoute53RecordSet.js"
   },
   "repository": {
     "type": "git",

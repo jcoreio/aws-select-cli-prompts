@@ -146,6 +146,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       stdout = process.stderr,
       style,
       clearFirst,
+      filterItems = () => true,
       ...rest
     }: {
       client?: Client
@@ -156,6 +157,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       clearFirst?: boolean
       stdin?: Readable
       stdout?: Writable
+      filterItems?: (item: Item) => boolean
     } & OtherOptions = {} as any
   ): Promise<Item> => {
     const region = await (client as any).config.region()
@@ -186,7 +188,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
         cancelationToken: CancelationToken,
         yieldChoices: (choices: Choices<Item>) => void
       ): Promise<Choices<Item> | void> => {
-        const choices: Choices<Item> = []
+        let choices: Choices<Item> = []
 
         if (!search && useRecents) {
           choices.push(
@@ -227,6 +229,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
             title: createTitle(item),
           })
         }
+        choices = choices.filter((c) => filterItems(c.value))
         if (!choices.length) {
           choices.push({
             title: chalk.gray(`No matching ${things} found`),

@@ -63,6 +63,7 @@ if (require.main === module) {
     await cli({
       select: () => selectCloudFormationStack(),
       queries: {
+        stackId: 'StackId',
         stackName: 'StackName',
       },
     })
