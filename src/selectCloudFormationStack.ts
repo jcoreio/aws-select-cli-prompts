@@ -20,7 +20,7 @@ const selectCloudFormationStack = makeSelector({
       .send(new DescribeStacksCommand({ StackName }), { abortSignal })
       .then((r) => r.Stacks?.[0]),
   columns: {
-    StackName: { grow: 2 },
+    StackName: { minWidth: 30, grow: 2 },
     StackStatus: {
       minWidth: 'UPDATE_ROLLBACK_FAILED'.length,
       grow: 1,

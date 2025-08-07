@@ -310,25 +310,40 @@ function makeCreateTitle<Item>(columns: Columns<Item>): (item: Item) => string {
       })
     }
   }
+  const separator = '  '
+  const availableWidth = process.stdout.columns - 4
+  let fixedWidth = normalizedColumns.reduce(
+    (total, c) =>
+      total + Math.max(c.minWidth ?? 0, c.width ?? 0) + separator.length,
+    0
+  )
+  let excess: number
+  while ((excess = fixedWidth - availableWidth) > 0) {
+    const c = normalizedColumns[normalizedColumns.length - 1]
+    const minWidth = Math.max(c.minWidth ?? 0, c.width ?? 0)
+    if (minWidth > excess) {
+      if (c.minWidth != null) c.minWidth = Math.max(0, c.minWidth - excess)
+      if (c.width != null) c.width = Math.max(0, c.width - excess)
+      break
+    }
+    fixedWidth -= minWidth + separator.length
+    normalizedColumns.pop()
+  }
+
+  const totalGrow = Math.max(
+    1,
+    normalizedColumns.reduce(
+      (total, c) => total + (c.grow ?? (c.width != null ? 0 : 1)),
+      0
+    )
+  )
+  const remainingWidth = Math.max(0, availableWidth - fixedWidth)
+  const columnWidths = normalizedColumns.map(
+    ({ width, minWidth, grow = 1 }) =>
+      width ?? (minWidth ?? 0) + Math.floor((remainingWidth * grow) / totalGrow)
+  )
+
   return (item: Item): string => {
-    const separator = '  '
-    const fixedWidth = normalizedColumns.reduce(
-      (total, c) => total + (c.width ?? 0),
-      separator.length * (normalizedColumns.length - 1)
-    )
-    const totalGrow = Math.max(
-      1,
-      normalizedColumns.reduce(
-        (total, c) => total + (c.grow ?? (c.width != null ? 0 : 1)),
-        0
-      )
-    )
-    const remainingWidth = Math.max(0, process.stdout.columns - fixedWidth - 4)
-    const columnWidths = normalizedColumns.map(
-      ({ width, minWidth, grow = 1 }) =>
-        width ??
-        Math.max(minWidth ?? 0, Math.floor((remainingWidth * grow) / totalGrow))
-    )
     return normalizedColumns
       .map((c, i) => {
         const width = columnWidths[i]
