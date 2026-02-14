@@ -10,15 +10,15 @@
     "prepublishOnly": "echo This package is meant to be published by semantic-release from the dist build directory. && exit 1"
   },
   "bin": {
-    "select-cloud-formation-stack": "./dist/selectCloudFormationStack.js",
-    "select-cloudwatch-log-event": "./dist/selectCloudWatchLogEvent.js",
-    "select-cloudwatch-log-group": "./dist/selectCloudWatchLogGroup.js",
-    "select-cloudwatch-log-stream": "./dist/selectCloudWatchLogStream.js",
-    "select-ebs-snapshot": "./dist/selectEBSSnapshot.js",
-    "select-ec2-instance": "./dist/selectEC2Instance.js",
-    "select-route-53-hosted-zone": "./dist/selectRoute53HostedZone.js",
-    "select-route-53-record-set": "./dist/selectRoute53RecordSet.js",
-    "select-secrets-manager-secret": "./dist/selectSecretsManagerSecret.js"
+    "select-cloud-formation-stack": "./dist/cli/selectCloudFormationStack.js",
+    "select-cloudwatch-log-event": "./dist/cli/selectCloudWatchLogEvent.js",
+    "select-cloudwatch-log-group": "./dist/cli/selectCloudWatchLogGroup.js",
+    "select-cloudwatch-log-stream": "./dist/cli/selectCloudWatchLogStream.js",
+    "select-ebs-snapshot": "./dist/cli/selectEBSSnapshot.js",
+    "select-ec2-instance": "./dist/cli/selectEC2Instance.js",
+    "select-route-53-hosted-zone": "./dist/cli/selectRoute53HostedZone.js",
+    "select-route-53-record-set": "./dist/cli/selectRoute53RecordSet.js",
+    "select-secrets-manager-secret": "./dist/cli/selectSecretsManagerSecret.js"
   },
   "repository": {
     "type": "git",

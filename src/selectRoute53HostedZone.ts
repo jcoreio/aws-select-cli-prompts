@@ -39,15 +39,3 @@ const selectRoute53HostedZone = makeSelector({
   },
 })
 export default selectRoute53HostedZone
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectRoute53HostedZone(),
-      queries: {
-        id: 'HostedZoneId',
-      },
-    })
-  })()
-}

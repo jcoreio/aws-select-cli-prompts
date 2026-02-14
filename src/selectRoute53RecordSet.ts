@@ -66,12 +66,3 @@ const selectRoute53RecordSet = makeSelector({
   },
 })
 export default selectRoute53RecordSet
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectRoute53RecordSet({ HostedZoneId: process.argv[2] }),
-    })
-  })()
-}

@@ -35,15 +35,3 @@ const selectSecretsManagerSecret = makeSelector({
   },
 })
 export default selectSecretsManagerSecret
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectSecretsManagerSecret(),
-      queries: {
-        arn: 'ARN',
-      },
-    })
-  })()
-}

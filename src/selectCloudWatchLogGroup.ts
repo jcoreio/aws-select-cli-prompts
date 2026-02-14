@@ -161,15 +161,3 @@ export default async function selectCloudWatchLogGroup({
   }
   return LogGroup
 }
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectCloudWatchLogGroup(),
-      queries: {
-        arn: 'arn',
-      },
-    })
-  })()
-}

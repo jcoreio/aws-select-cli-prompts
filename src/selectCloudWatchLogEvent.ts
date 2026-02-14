@@ -233,15 +233,3 @@ export default async function selectCloudWatchLogEvent({
   if (!selected) throw new Error('no event was selected')
   return selected
 }
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: (args) => selectCloudWatchLogEvent(args),
-      queries: {
-        arn: 'arn',
-      },
-    })
-  })()
-}

@@ -220,15 +220,3 @@ export default async function selectCloudWatchLogStream({
   }
   return LogStream
 }
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: (args) => selectCloudWatchLogStream(args),
-      queries: {
-        arn: 'arn',
-      },
-    })
-  })()
-}

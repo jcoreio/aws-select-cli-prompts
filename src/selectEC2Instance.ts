@@ -54,19 +54,3 @@ const selectEC2Instance = makeSelector({
 })
 
 export default selectEC2Instance
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectEC2Instance(),
-      queries: {
-        id: 'InstanceId',
-        'pub-ip': 'PublicIpAddress',
-        'pub-dns': 'PublicDnsName',
-        'priv-ip': 'PrivateIpAddress',
-        'priv-dns': 'PrivateDnsName',
-      },
-    })
-  })()
-}

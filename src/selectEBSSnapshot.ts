@@ -52,16 +52,3 @@ const selectEBSSnapshot = makeSelector({
   },
 })
 export default selectEBSSnapshot
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectEBSSnapshot(),
-      queries: {
-        id: 'SnapshotId',
-        vol: 'VolumeId',
-      },
-    })
-  })()
-}

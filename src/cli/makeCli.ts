@@ -2,7 +2,7 @@
 import jmespath from 'jmespath'
 import yargs from 'yargs/yargs'
 
-export async function cli({
+export async function makeCli({
   select,
   queries,
 }: {

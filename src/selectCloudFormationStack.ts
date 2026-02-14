@@ -56,16 +56,3 @@ const selectCloudFormationStack = makeSelector({
 })
 
 export default selectCloudFormationStack
-
-if (require.main === module) {
-  ;(async () => {
-    const { cli } = await import('./cli')
-    await cli({
-      select: () => selectCloudFormationStack(),
-      queries: {
-        stackId: 'StackId',
-        stackName: 'StackName',
-      },
-    })
-  })()
-}
