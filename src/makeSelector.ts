@@ -8,45 +8,39 @@ import {
 import chalk, { Chalk } from 'chalk'
 import { Readable, Writable } from 'stream'
 import { addRecent, loadRecents } from './recents'
-import { get as valueAtPath } from 'lodash'
+import valueAtPath from 'lodash/get.js'
 import timeAgo from './timeAgo'
 
-type PathIn<T> = T extends Array<infer E>
-  ? `[${number}]${SubpathIn<E>}`
-  : T extends object
-  ? ObjectPath<T, keyof T>
+type PathIn<T> =
+  T extends Array<infer E> ? `[${number}]${SubpathIn<E>}`
+  : T extends object ? ObjectPath<T, keyof T>
   : never
 
-type ObjectPath<T, K> = K extends string & keyof T
-  ? `${K}${SubpathIn<T[K]>}`
-  : never
+type ObjectPath<T, K> =
+  K extends string & keyof T ? `${K}${SubpathIn<T[K]>}` : never
 
-type SubpathIn<T> = T extends Array<infer E>
-  ? `[${number}]${SubpathIn<E>}`
-  : T extends object
-  ? `.${ObjectPath<T, keyof T>}`
+type SubpathIn<T> =
+  T extends Array<infer E> ? `[${number}]${SubpathIn<E>}`
+  : T extends object ? `.${ObjectPath<T, keyof T>}`
   : ''
 
-type PathAndTypeIn<T, Path extends string = ''> = NonNullable<T> extends Date
-  ? [Path, T]
-  : NonNullable<T> extends Array<infer E>
-  ? PathAndTypeIn<E, `${Path}[${number}]`>
-  : NonNullable<T> extends object
-  ? ObjectPathAndType<NonNullable<T>, Path, keyof NonNullable<T>>
+type PathAndTypeIn<T, Path extends string = ''> =
+  NonNullable<T> extends Date ? [Path, T]
+  : NonNullable<T> extends Array<infer E> ?
+    PathAndTypeIn<E, `${Path}[${number}]`>
+  : NonNullable<T> extends object ?
+    ObjectPathAndType<NonNullable<T>, Path, keyof NonNullable<T>>
   : [Path, T]
 
-type ObjectPathAndType<T, Path extends string, K> = K extends string & keyof T
-  ? PathAndTypeIn<T[K], Path extends '' ? K : `${Path}.${K}`>
+type ObjectPathAndType<T, Path extends string, K> =
+  K extends string & keyof T ?
+    PathAndTypeIn<T[K], Path extends '' ? K : `${Path}.${K}`>
   : never
 
 type PathsOf<T> = T extends [infer Path, any] ? Path : never
 
-type ValueOfPath<PathAndTypeTuples, Path> = PathAndTypeTuples extends [
-  Path,
-  infer Value
-]
-  ? Value
-  : never
+type ValueOfPath<PathAndTypeTuples, Path> =
+  PathAndTypeTuples extends [Path, infer Value] ? Value : never
 
 type PathAndTypeMap<T> = {
   [Path in PathsOf<PathAndTypeIn<T>>]: ValueOfPath<PathAndTypeIn<T>, Path>
@@ -63,14 +57,14 @@ type ColumnMap<Item, Obj = PathAndTypeMap<Item>> = {
   [K in keyof Obj]?: {
     format?:
       | ((value: Obj[K]) => string)
-      | (NonNullable<Obj[K]> extends string
-          ? { [Value in NonNullable<Obj[K]>]?: string } & {
-              __other__?: (value: any) => string
-            }
-          : never)
-    colors?: NonNullable<Obj[K]> extends string
-      ? { [Value in NonNullable<Obj[K]> | '__other__']?: Chalk }
-      : never
+      | (NonNullable<Obj[K]> extends string ?
+          { [Value in NonNullable<Obj[K]>]?: string } & {
+            __other__?: (value: any) => string
+          }
+        : never)
+    colors?: NonNullable<Obj[K]> extends string ?
+      { [Value in NonNullable<Obj[K]> | '__other__']?: Chalk }
+    : never
   } & BasicColumnProps
 } & {
   [K in `__${string}__`]?: {
@@ -236,7 +230,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
         if (!choices.length) {
           choices.push({
             title: chalk.gray(`No matching ${things} found`),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
             value: undefined as any,
           })
         }
@@ -279,13 +273,10 @@ function makeCreateTitle<Item>(columns: Columns<Item>): (item: Item) => string {
           return typeof get === 'string' ? valueAtPath(item, get) : get(item)
         },
         format: (item: Item, value: any) =>
-          showRecent && (item as any)[RECENT]
-            ? '(recent)'
-            : value == null
-            ? ''
-            : format
-            ? format(value)
-            : value,
+          showRecent && (item as any)[RECENT] ? '(recent)'
+          : value == null ? ''
+          : format ? format(value)
+          : value,
       })
     }
   } else {
@@ -296,17 +287,16 @@ function makeCreateTitle<Item>(columns: Columns<Item>): (item: Item) => string {
       normalizedColumns.push({
         ...columns[key],
         ...(format === timeAgo ? { width: '59 minutes ago'.length } : {}),
-        get: /^__.*__$/.test(key)
-          ? (column as any).get
+        get:
+          /^__.*__$/.test(key) ?
+            (column as any).get
           : (item: Item) => valueAtPath(item, key),
         format: (item, value) =>
-          showRecent && (item as any)[RECENT]
-            ? '(recent)'
-            : value == null
-            ? ''
-            : typeof format === 'function'
-            ? format(value)
-            : format?.[value] ?? (format as any)?.__other__?.(value) ?? value,
+          showRecent && (item as any)[RECENT] ? '(recent)'
+          : value == null ? ''
+          : typeof format === 'function' ? format(value)
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          : (format?.[value] ?? (format as any)?.__other__?.(value) ?? value),
       })
     }
   }

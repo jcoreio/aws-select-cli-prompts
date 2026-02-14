@@ -40,9 +40,9 @@ function createChoice(
 ): Choice<ChoiceProps> {
   const { arn, logStreamName, lastEventTimestamp } = LogStream
   const rest = `  ${
-    options?.recent
-      ? chalk.magentaBright('(recent)')
-      : ' '.repeat('(recent)'.length)
+    options?.recent ?
+      chalk.magentaBright('(recent)')
+    : ' '.repeat('(recent)'.length)
   }  ${column(timeAgo(lastEventTimestamp ?? NaN), '59 minutes ago'.length)}`
   return {
     title:
@@ -152,7 +152,7 @@ export default async function selectCloudWatchLogStream({
       let regex
       try {
         regex = new RegExp(input.trim(), 'i')
-      } catch (error) {
+      } catch {
         regex = new RegExp(
           input.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'),
           'i'
@@ -182,7 +182,7 @@ export default async function selectCloudWatchLogStream({
           title: chalk.gray(
             `No matching CloudWatch LogStreams found (only the most recent ${MaxLoad} were checked)`
           ),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           value: undefined as any,
         })
       }

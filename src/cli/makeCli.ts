@@ -13,14 +13,14 @@ export async function makeCli({
     const argv = await yargs(process.argv.slice(2))
       .options({
         query: { type: 'string', description: 'print value at this JMESPath' },
-        ...(queries
-          ? Object.fromEntries(
-              Object.entries(queries).map(([k, v]) => [
-                k,
-                { type: 'boolean', description: `print ${v}` },
-              ])
-            )
-          : {}),
+        ...(queries ?
+          Object.fromEntries(
+            Object.entries(queries).map(([k, v]) => [
+              k,
+              { type: 'boolean', description: `print ${v}` },
+            ])
+          )
+        : {}),
       })
       .help()
       .parse()

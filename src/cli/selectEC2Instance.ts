@@ -1,5 +1,5 @@
 import selectEC2Instance from '../selectEC2Instance'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectEC2Instance(),

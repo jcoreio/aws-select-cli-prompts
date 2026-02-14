@@ -27,7 +27,7 @@ const selectEC2Instance = makeSelector({
       .send(new DescribeInstancesCommand({ InstanceIds: [id] }), {
         abortSignal,
       })
-      .then((r) => r?.Reservations?.[0]?.Instances?.[0]),
+      .then((r) => r.Reservations?.[0]?.Instances?.[0]),
   columns: {
     __Name__: {
       get: (i) => i.Tags?.find((t) => t.Key === 'Name')?.Value,

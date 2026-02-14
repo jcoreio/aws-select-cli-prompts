@@ -4,21 +4,21 @@
   "description": "CLI prompts to select AWS resources via aws-sdk",
   "sideEffects": false,
   "scripts": {
-    "tsc:watch": "npm run tsc -- --watch",
     "tc": "toolchain",
     "toolchain": "toolchain",
+    "test": "toolchain test",
     "prepublishOnly": "echo This package is meant to be published by semantic-release from the dist build directory. && exit 1"
   },
   "bin": {
-    "select-cloud-formation-stack": "./dist/cli/selectCloudFormationStack.js",
-    "select-cloudwatch-log-event": "./dist/cli/selectCloudWatchLogEvent.js",
-    "select-cloudwatch-log-group": "./dist/cli/selectCloudWatchLogGroup.js",
-    "select-cloudwatch-log-stream": "./dist/cli/selectCloudWatchLogStream.js",
-    "select-ebs-snapshot": "./dist/cli/selectEBSSnapshot.js",
-    "select-ec2-instance": "./dist/cli/selectEC2Instance.js",
-    "select-route-53-hosted-zone": "./dist/cli/selectRoute53HostedZone.js",
-    "select-route-53-record-set": "./dist/cli/selectRoute53RecordSet.js",
-    "select-secrets-manager-secret": "./dist/cli/selectSecretsManagerSecret.js"
+    "select-cloud-formation-stack": "./dist/cli/selectCloudFormationStack.mjs",
+    "select-cloudwatch-log-event": "./dist/cli/selectCloudWatchLogEvent.mjs",
+    "select-cloudwatch-log-group": "./dist/cli/selectCloudWatchLogGroup.mjs",
+    "select-cloudwatch-log-stream": "./dist/cli/selectCloudWatchLogStream.mjs",
+    "select-ebs-snapshot": "./dist/cli/selectEBSSnapshot.mjs",
+    "select-ec2-instance": "./dist/cli/selectEC2Instance.mjs",
+    "select-route-53-hosted-zone": "./dist/cli/selectRoute53HostedZone.mjs",
+    "select-route-53-record-set": "./dist/cli/selectRoute53RecordSet.mjs",
+    "select-secrets-manager-secret": "./dist/cli/selectSecretsManagerSecret.mjs"
   },
   "repository": {
     "type": "git",
@@ -36,30 +36,21 @@
   },
   "homepage": "https://github.com/jcoreio/aws-select-cli-prompts#readme",
   "devDependencies": {
-    "@babel/plugin-transform-react-jsx": "^7.14.9",
-    "@jcoreio/toolchain": "^3.2.1",
-    "@jcoreio/toolchain-circle": "^3.2.1",
-    "@jcoreio/toolchain-esnext": "^3.2.1",
-    "@jcoreio/toolchain-semantic-release": "^3.2.1",
-    "@jcoreio/toolchain-typescript": "^3.2.1",
-    "@types/chai": "^4.3.5",
+    "@jcoreio/toolchain": "^5.10.3",
+    "@jcoreio/toolchain-circle": "^5.10.3",
+    "@jcoreio/toolchain-esnext": "^5.10.3",
+    "@jcoreio/toolchain-semantic-release": "^5.10.3",
+    "@jcoreio/toolchain-typescript": "^5.10.3",
     "@types/fs-extra": "^9.0.6",
     "@types/jmespath": "^0.15.2",
     "@types/lodash": "^4.17.5",
-    "@types/mocha": "^10.0.1",
     "@types/node": "^20.11.6",
     "@types/yargs": "^17.0.32",
-    "@typescript-eslint/eslint-plugin": "^5.60.0",
-    "@typescript-eslint/parser": "^5.60.0",
-    "@typescript-eslint/typescript-estree": "^4.32.0",
-    "chai": "^4.3.7",
-    "copy": "^0.3.2",
-    "cross-env": "^7.0.3",
-    "eslint": "^8.43.0",
+    "eslint": "^9.17.0",
     "eslint-config-prettier": "^8.3.0",
-    "mocha": "^10.2.0",
-    "rimraf": "^3.0.2",
-    "strip-ansi": "^6.0.0",
+    "globals": "^16.0.0",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.4.2",
     "ts-node": "^10.7.0",
     "typescript": "^5.1.0"
   },
@@ -69,13 +60,14 @@
     "@aws-sdk/client-ec2": "^3.499.0",
     "@aws-sdk/client-route-53": "^3.598.0",
     "@aws-sdk/client-secrets-manager": "^3.598.0",
-    "@babel/runtime": "^7.18.6",
+    "@babel/runtime": "^7.26.0",
     "async-autocomplete-cli": "^1.0.0",
     "chalk": "^4.0.0",
     "fs-extra": "^9.1.0",
     "javascript-time-ago": "^2.5.10",
     "jmespath": "^0.16.0",
     "lodash": "^4.17.21",
+    "strip-ansi": "^6.0.0",
     "yargs": "^17.7.2"
   },
   "main": "dist/index.js",
@@ -84,5 +76,8 @@
   "engines": {
     "node": ">=16"
   },
-  "packageManager": "pnpm@8.3.1"
+  "packageManager": "pnpm@10.6.5",
+  "@jcoreio/toolchain": {
+    "migratedVersion": "5.10.3"
+  }
 }

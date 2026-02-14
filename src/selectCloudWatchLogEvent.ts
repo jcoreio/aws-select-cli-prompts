@@ -188,31 +188,31 @@ export default async function selectCloudWatchLogEvent({
         }
         startTime = Date.now() - offset
       }
-      for await (const { events = [] } of filterPattern
-        ? paginateFilterLogEvents(
-            {
-              client: logs,
-              stopOnSameToken: true,
-            },
-            {
-              logStreamNames: [logStreamName],
-              filterPattern,
-              logGroupIdentifier,
-              logGroupName,
-              startTime,
-              endTime: Date.now(),
-            }
-          )
-        : paginateGetLogEvents(
-            { client: logs, stopOnSameToken: true },
-            {
-              logStreamName,
-              logGroupIdentifier,
-              logGroupName,
-              startTime,
-              endTime: Date.now(),
-            }
-          )) {
+      for await (const { events = [] } of filterPattern ?
+        paginateFilterLogEvents(
+          {
+            client: logs,
+            stopOnSameToken: true,
+          },
+          {
+            logStreamNames: [logStreamName],
+            filterPattern,
+            logGroupIdentifier,
+            logGroupName,
+            startTime,
+            endTime: Date.now(),
+          }
+        )
+      : paginateGetLogEvents(
+          { client: logs, stopOnSameToken: true },
+          {
+            logStreamName,
+            logGroupIdentifier,
+            logGroupName,
+            startTime,
+            endTime: Date.now(),
+          }
+        )) {
         if (ac.signal.aborted) break
         for (const event of events) {
           choices.push(createChoice(event))
@@ -222,7 +222,7 @@ export default async function selectCloudWatchLogEvent({
       if (!choices.length) {
         choices.push({
           title: chalk.gray(`No matching events found`),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           value: undefined as any,
         })
       }

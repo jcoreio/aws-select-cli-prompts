@@ -1,5 +1,5 @@
 import selectCloudFormationStack from '../selectCloudFormationStack'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectCloudFormationStack(),

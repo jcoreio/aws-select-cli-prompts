@@ -1,5 +1,5 @@
 import selectSecretsManagerSecret from '../selectSecretsManagerSecret'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectSecretsManagerSecret(),

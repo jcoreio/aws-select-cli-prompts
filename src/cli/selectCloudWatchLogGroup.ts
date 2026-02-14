@@ -1,5 +1,5 @@
 import selectCloudWatchLogGroup from '../selectCloudWatchLogGroup'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectCloudWatchLogGroup(),

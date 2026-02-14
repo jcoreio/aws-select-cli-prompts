@@ -33,9 +33,9 @@ function createChoice(
 ): Choice<ChoiceProps> {
   const { arn, logGroupName, creationTime } = LogGroup
   const rest = `  ${
-    options?.recent
-      ? chalk.magentaBright('(recent)')
-      : ' '.repeat('(recent)'.length)
+    options?.recent ?
+      chalk.magentaBright('(recent)')
+    : ' '.repeat('(recent)'.length)
   }  ${column(timeAgo(creationTime ?? NaN), '2022/03/17 17:37'.length)}`
   return {
     title:
@@ -103,11 +103,11 @@ export default async function selectCloudWatchLogGroup({
 
       const args: DescribeLogGroupsRequest = {
         limit: MaxResults,
-        ...(input
-          ? {
-              logGroupNamePattern: input,
-            }
-          : {}),
+        ...(input ?
+          {
+            logGroupNamePattern: input,
+          }
+        : {}),
       }
       if (cancelationToken.canceled) return []
       const ac = new AbortController()
@@ -129,7 +129,7 @@ export default async function selectCloudWatchLogGroup({
       if (!choices.length) {
         choices.push({
           title: chalk.gray('No matching CloudWatch LogGroups found'),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           value: undefined as any,
         })
       }

@@ -38,9 +38,9 @@ const selectRoute53RecordSet = makeSelector({
         { abortSignal }
       )
       .then((r) =>
-        r.ResourceRecordSets?.[0]?.Name === id
-          ? r.ResourceRecordSets[0]
-          : undefined
+        r.ResourceRecordSets?.[0]?.Name === id ?
+          r.ResourceRecordSets[0]
+        : undefined
       ),
   getSearchText: ({ Name, AliasTarget, ResourceRecords }) =>
     `${Name} ${
@@ -59,9 +59,9 @@ const selectRoute53RecordSet = makeSelector({
     },
     __Target__: {
       get: (item) =>
-        item.AliasTarget
-          ? item.AliasTarget.DNSName
-          : item.ResourceRecords?.map((r) => r.Value).join(' | '),
+        item.AliasTarget ?
+          item.AliasTarget.DNSName
+        : item.ResourceRecords?.map((r) => r.Value).join(' | '),
     },
   },
 })

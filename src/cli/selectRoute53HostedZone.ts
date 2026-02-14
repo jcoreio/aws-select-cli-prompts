@@ -1,5 +1,5 @@
 import selectRoute53HostedZone from '../selectRoute53HostedZone'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectRoute53HostedZone(),

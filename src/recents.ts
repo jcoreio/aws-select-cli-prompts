@@ -2,7 +2,6 @@ import os from 'os'
 import path from 'path'
 import fs from 'fs-extra'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const RECENTS_FILE = path.join(
   os.homedir(),
   '.aws-select-cli-prompts',
@@ -17,10 +16,12 @@ export async function loadRecents<T>(category: string[]): Promise<T[]> {
         Object.fromEntries(
           [...Object.entries(c)].map(([key, value]) => [
             key,
-            typeof value === 'string' &&
-            /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/.test(value)
-              ? new Date(value)
-              : value,
+            (
+              typeof value === 'string' &&
+              /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/.test(value)
+            ) ?
+              new Date(value)
+            : value,
           ])
         ) as any
     )

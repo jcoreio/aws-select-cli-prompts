@@ -1,5 +1,5 @@
 import selectEBSSnapshot from '../selectEBSSnapshot'
-;(async () => {
+void (async () => {
   const { makeCli: cli } = await import('./makeCli')
   await cli({
     select: () => selectEBSSnapshot(),
