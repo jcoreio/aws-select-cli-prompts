@@ -55,12 +55,13 @@
     "typescript": "^5.1.0"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudformation": "^3.598.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.499.0",
-    "@aws-sdk/client-ec2": "^3.499.0",
-    "@aws-sdk/client-route-53": "^3.598.0",
-    "@aws-sdk/client-secrets-manager": "^3.598.0",
+    "@aws-sdk/client-cloudformation": "^3.988.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.988.0",
+    "@aws-sdk/client-ec2": "^3.988.0",
+    "@aws-sdk/client-route-53": "^3.988.0",
+    "@aws-sdk/client-secrets-manager": "^3.988.0",
     "@babel/runtime": "^7.26.0",
+    "@jcoreio/aws-sdk-types": "^1.0.2",
     "async-autocomplete-cli": "^1.0.0",
     "chalk": "^4.0.0",
     "fs-extra": "^9.1.0",

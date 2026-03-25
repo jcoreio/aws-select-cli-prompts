@@ -1,4 +1,3 @@
-import { EC2ClientConfig } from '@aws-sdk/client-ec2'
 import {
   CancelationToken,
   Choices,
@@ -10,6 +9,7 @@ import { Readable, Writable } from 'stream'
 import { addRecent, loadRecents } from './recents'
 import valueAtPath from 'lodash/get.js'
 import timeAgo from './timeAgo'
+import { AWSClientConfig } from '@jcoreio/aws-sdk-types'
 
 type PathIn<T> =
   T extends Array<infer E> ? `[${number}]${SubpathIn<E>}`
@@ -108,7 +108,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   things?: string
   defaultLimit?: number
   recentKey: string[] | ((otherOptions: OtherOptions) => string[])
-  getClient: (config: EC2ClientConfig) => Client
+  getClient: (config: AWSClientConfig) => Client
   getPage: (options: {
     client: Client
     otherOptions: OtherOptions
