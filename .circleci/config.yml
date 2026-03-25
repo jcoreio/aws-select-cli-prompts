@@ -27,7 +27,7 @@ jobs:
           name: Prepublish
           command: |
             [[ $(netstat -tnlp | grep -F 'circleci-agent') ]] || pnpm run tc prepublish
-      - codecov/upload
+      # - codecov/upload
       - run:
           name: Release
           command: |
