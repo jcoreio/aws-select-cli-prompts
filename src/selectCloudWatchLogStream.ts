@@ -190,6 +190,7 @@ export default async function selectCloudWatchLogStream({
       return choices
     },
   })
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!selected) throw new Error('no CloudWatch LogStream was selected')
 
   let { LogStream } = selected

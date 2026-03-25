@@ -36,11 +36,11 @@
   },
   "homepage": "https://github.com/jcoreio/aws-select-cli-prompts#readme",
   "devDependencies": {
-    "@jcoreio/toolchain": "^5.10.3",
-    "@jcoreio/toolchain-circle": "^5.10.3",
-    "@jcoreio/toolchain-esnext": "^5.10.3",
-    "@jcoreio/toolchain-semantic-release": "^5.10.3",
-    "@jcoreio/toolchain-typescript": "^5.10.3",
+    "@jcoreio/toolchain": "^5.10.5",
+    "@jcoreio/toolchain-circle": "^5.10.5",
+    "@jcoreio/toolchain-esnext": "^5.10.5",
+    "@jcoreio/toolchain-semantic-release": "^5.10.5",
+    "@jcoreio/toolchain-typescript": "^5.10.5",
     "@types/fs-extra": "^9.0.6",
     "@types/jmespath": "^0.15.2",
     "@types/lodash": "^4.17.5",
@@ -78,6 +78,6 @@
   },
   "packageManager": "pnpm@10.6.5",
   "@jcoreio/toolchain": {
-    "migratedVersion": "5.10.3"
+    "migratedVersion": "5.10.5"
   }
 }

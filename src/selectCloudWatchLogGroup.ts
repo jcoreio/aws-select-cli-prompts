@@ -137,6 +137,7 @@ export default async function selectCloudWatchLogGroup({
       return choices
     },
   })
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!selected) throw new Error('no CloudWatch LogGroup was selected')
 
   let { LogGroup } = selected

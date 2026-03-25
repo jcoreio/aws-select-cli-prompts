@@ -230,6 +230,7 @@ export default async function selectCloudWatchLogEvent({
       return choices
     },
   })
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!selected) throw new Error('no event was selected')
   return selected
 }
