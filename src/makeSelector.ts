@@ -97,10 +97,10 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   recentKey,
   getClient,
   getOtherOptions,
-  getPage,
-  getSearchText,
+  getPage: defaultGetPage,
+  getSearchText: defaultGetSearchText,
   refetchRecent,
-  getItems,
+  getItems: defaultGetItems,
   getId,
   columns: defaultColumns,
 }: {
@@ -132,6 +132,9 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
   return async (
     {
       client = getClient({}),
+      getPage = defaultGetPage,
+      getItems = defaultGetItems,
+      getSearchText = defaultGetSearchText,
       message,
       limit = defaultLimit,
       useRecents = true,
@@ -144,6 +147,9 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
       ...rest
     }: {
       client?: Client
+      getPage?: typeof defaultGetPage
+      getItems?: typeof defaultGetItems
+      getSearchText?: typeof defaultGetSearchText
       useRecents?: boolean
       message?: string
       limit?: number
