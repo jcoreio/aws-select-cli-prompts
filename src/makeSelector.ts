@@ -124,7 +124,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
     id: Id
     abortSignal?: AbortSignal
   }) => Promise<Item | undefined>
-  getItems: (page: Page) => Item[] | undefined
+  getItems: (page: Page) => Item[] | undefined | Promise<Item[] | undefined>
   getId: (item: Item) => Id | undefined
   getSearchText?: (item: Item) => string | undefined
   columns: Columns<Item>
@@ -219,7 +219,7 @@ export function makeSelector<OtherOptions, Client, Page, Item, Id>({
           limit,
         })
 
-        let items = getItems(page) || []
+        let items = (await getItems(page)) || []
         if (getSearchText && search) {
           const searchLower = search.toLowerCase()
           items = items.filter((item) =>
