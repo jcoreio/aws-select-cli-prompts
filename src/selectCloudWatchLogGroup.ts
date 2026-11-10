@@ -36,7 +36,7 @@ function createChoice(
     options?.recent ?
       chalk.magentaBright('(recent)')
     : ' '.repeat('(recent)'.length)
-  }  ${column(timeAgo(creationTime ?? NaN), '2022/03/17 17:37'.length)}`
+  }  ${column(timeAgo(creationTime ?? undefined), '2022/03/17 17:37'.length)}`
   return {
     title:
       column(

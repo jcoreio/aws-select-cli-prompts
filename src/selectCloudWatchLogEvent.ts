@@ -24,7 +24,7 @@ function createChoice(event: OutputLogEvent): Choice<OutputLogEvent> {
   const { message, timestamp } = event
   return {
     title: `${column(
-      formatDate(new Date(timestamp ?? NaN)),
+      formatDate(timestamp != null ? new Date(timestamp) : undefined),
       dateWidth
     )}  ${message}`,
     value: event,

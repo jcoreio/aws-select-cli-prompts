@@ -43,7 +43,7 @@ function createChoice(
     options?.recent ?
       chalk.magentaBright('(recent)')
     : ' '.repeat('(recent)'.length)
-  }  ${column(timeAgo(lastEventTimestamp ?? NaN), '59 minutes ago'.length)}`
+  }  ${column(timeAgo(lastEventTimestamp ?? undefined), '59 minutes ago'.length)}`
   return {
     title:
       column(
